@@ -1,0 +1,13 @@
+[build-system]
+requires = ["setuptools", "wheel"]
+
+[project]
+name = "yabi"
+version = "0.0.1"
+description = "Yet Another Bython (braced Python) Implementation"
+dependencies = ["pwcp@git+https://github.com/solaluset/pwcp.git@69d90b160ebca6dacc5a399a32ed8415f80386a8"]
+optional-dependencies = {tests = ["pytest"]}
+scripts = {yabi = "yabi:main"}
+
+[tool.setuptools]
+packages = ["yabi"]
