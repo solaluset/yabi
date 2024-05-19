@@ -1,0 +1,25 @@
+try {
+  1 / 0
+} except Exception {
+  print("e")
+}
+try {
+  1 / 0
+} except Exception as e {
+  print(e)
+}
+try {
+  1 / 0
+} except (Exception) {
+  print("e")
+}
+try {
+  1 / 0
+} except (ValueError, ZeroDivisionError) {
+  print("e")
+}
+try {
+  1 / 0
+} except (ValueError, ZeroDivisionError) as e {
+  print(e)
+}

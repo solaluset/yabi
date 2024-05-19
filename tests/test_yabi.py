@@ -24,3 +24,9 @@ def test_dict():
     with patch("sys.stdout", new=StringIO()):
         main(["tests/dict.by"])
         assert sys.stdout.getvalue() == "1\n2\n3\nok\n"
+
+
+def test_except():
+    with patch("sys.stdout", new=StringIO()):
+        main(["tests/except.by"])
+        assert sys.stdout.getvalue() == "e\ndivision by zero\ne\ne\ndivision by zero\n"
