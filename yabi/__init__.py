@@ -1,3 +1,4 @@
+import sys
 from io import TextIOBase
 
 import pwcp
@@ -25,3 +26,10 @@ def main(args=None):
     pwcp.preprocessor.preprocess = preproc
     args = (args,) if args is not None else ()
     p_main(*args)
+
+
+def convert_main():
+    if len(sys.argv) < 2:
+        print("Missing target file.", file=sys.stderr)
+        return
+    print(to_bython(open(sys.argv[1]).read()), end="")
