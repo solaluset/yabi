@@ -20,6 +20,15 @@ if ({a for a in range(n)}) { print("Hello") }
 Braces and semicolons allow to make any code a one-liner.
 But, like, why would you do that?
 
+## Converting Python files
+
+You don't need to convert anything because `.py` files can be imported into `.by`.
+YABI provides `yabi-convert` in case you still want to convert, but it gives kinda goofy results (it should still work though).
+
+```bash
+yabi-convert something.py > something.by
+```
+
 ## Acknowledgements
 
 Inspired by https://github.com/mathialo/bython
