@@ -19,3 +19,7 @@ if ({a for a in range(n)}) { print("Hello") }
 
 Braces and semicolons allow to make any code a one-liner.
 But, like, why would you do that?
+
+## Acknowledgements
+
+Inspired by https://github.com/mathialo/bython
