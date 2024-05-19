@@ -240,5 +240,13 @@ def parse(tokens: Iterable[str]) -> Block:
     return result
 
 
+def _transform(code: str, python: bool) -> str:
+    return parse(expand_semicolons(tokenize(code))).unparse(python)
+
+
 def to_pure_python(code: str):
-    return parse(expand_semicolons(tokenize(code))).unparse()
+    return _transform(code, True)
+
+
+def to_bython(code: str):
+    return _transform(code, False)

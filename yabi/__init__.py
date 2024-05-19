@@ -4,7 +4,7 @@ import pwcp
 from pwcp import main as p_main
 from pwcp.preprocessor import PyPreprocessor, preprocess
 
-from .parser import to_pure_python
+from .parser import to_bython, to_pure_python
 
 
 EXTENSION = ".by"
