@@ -1,0 +1,2 @@
+a = "a" if True else "b"
+print(a)

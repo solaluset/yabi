@@ -30,3 +30,9 @@ def test_except():
     with patch("sys.stdout", new=StringIO()):
         main(["tests/except.by"])
         assert sys.stdout.getvalue() == "e\ndivision by zero\ne\ne\ndivision by zero\n"
+
+
+def test_inline_if():
+    with patch("sys.stdout", new=StringIO()):
+        main(["tests/inline_if.by"])
+        assert sys.stdout.getvalue() == "a\n"

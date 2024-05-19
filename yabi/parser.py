@@ -155,6 +155,7 @@ def parse(tokens: Iterable[str]) -> Block:
     in_head = after_colon = finish_on_nl = False
     capture_indent = after_nl = after_indent = False
     after_async = False
+    accept_keyword = False
     seen_lambdas = 0
     for tok in tokens:
         block_started = False
@@ -171,6 +172,7 @@ def parse(tokens: Iterable[str]) -> Block:
                 capture_indent = True
         if after_nl:
             after_nl = False
+            accept_keyword = True
             if tok not in {"\n", "#"}:
                 indent = tok if tok.isspace() else ""
                 while indent_stack[-1] is not None and not indent.startswith(
@@ -188,13 +190,16 @@ def parse(tokens: Iterable[str]) -> Block:
             if finish_on_nl:
                 finish_on_nl = False
                 result.finish()
-        elif tok in KEYWORDS and all(b[1] for b in brace_stack):
-            if not after_async:
-                result.append(Block())
-                in_head = True
-                after_async = tok == "async"
-            else:
-                after_async = False
+        elif accept_keyword:
+            if not tok.isspace():
+                accept_keyword = False
+            if tok in KEYWORDS and all(b[1] for b in brace_stack):
+                if not after_async:
+                    result.append(Block())
+                    in_head = True
+                    after_async = tok == "async"
+                else:
+                    after_async = False
         if in_head:
             if tok == "lambda":
                 seen_lambdas += 1
@@ -219,6 +224,7 @@ def parse(tokens: Iterable[str]) -> Block:
                 indent_stack.append(None)
         elif tok in BRACES.values():
             brace, block_finished = brace_stack.pop()
+            accept_keyword = block_finished
             if brace != tok:
                 raise SyntaxError(
                     f"closing parenthesis '{tok}' does not match"
