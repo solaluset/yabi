@@ -170,7 +170,8 @@ def parse(tokens: Iterable[str]) -> Block:
         if after_indent:
             after_indent = False
             if tok in {"\n", "#"}:
-                indent_stack.pop()
+                if len(indent_stack) > 1:
+                    indent_stack.pop()
                 capture_indent = True
         if after_nl:
             after_nl = False
