@@ -24,6 +24,7 @@ BRACES = {
     "{": "}",
 }
 INDENT_SIZE = 4
+UNCLOSED_BLOCK_ERROR = "there is an unclosed block"
 
 
 def tokenize(text: str) -> Generator[str, None, None]:
@@ -239,10 +240,10 @@ def parse(tokens: Iterable[str]) -> Block:
             result.append(tok)
     for i in indent_stack:
         if i is None:
-            raise SyntaxError("there is an unclosed block")
+            raise SyntaxError(UNCLOSED_BLOCK_ERROR)
         result.finish()
     if not result.finished:
-        raise SyntaxError("there is an unclosed block")
+        raise SyntaxError(UNCLOSED_BLOCK_ERROR)
     return result
 
 
