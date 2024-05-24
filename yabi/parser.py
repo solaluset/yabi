@@ -170,7 +170,8 @@ def parse(tokens: Iterable[str]) -> Block:
         if after_indent:
             after_indent = False
             if tok in {"\n", "#"}:
-                indent_stack.pop()
+                if len(indent_stack) > 1:
+                    indent_stack.pop()
                 capture_indent = True
         if after_nl:
             after_nl = False
@@ -220,6 +221,7 @@ def parse(tokens: Iterable[str]) -> Block:
             brace_stack.append((BRACES[tok], block_started))
             if block_started:
                 indent_stack.append(None)
+                accept_keyword = True
         elif tok in BRACES.values():
             try:
                 brace, block_finished = brace_stack.pop()
@@ -248,7 +250,7 @@ def parse(tokens: Iterable[str]) -> Block:
 
 
 def _transform(code: str, python: bool) -> str:
-    return parse(expand_semicolons(tokenize(code))).unparse(python)
+    return parse(expand_semicolons(tokenize(code + "\n"))).unparse(python)
 
 
 def to_pure_python(code: str):

@@ -1,1 +1,1 @@
-def hello() { print("Hello") } hello()
+def hello() { if 1 { print("Hello") } } hello()
