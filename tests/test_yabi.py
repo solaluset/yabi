@@ -36,3 +36,9 @@ def test_inline_if():
     with patch("sys.stdout", new=StringIO()):
         main(["tests/inline_if.by"])
         assert sys.stdout.getvalue() == "a\n"
+
+
+def test_async():
+    with patch("sys.stdout", new=StringIO()):
+        main(["tests/async.by"])
+        assert sys.stdout.getvalue() == "hello\n"

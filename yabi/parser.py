@@ -154,7 +154,6 @@ def parse(tokens: Iterable[str]) -> Block:
     result = Block()
     in_head = after_colon = finish_on_nl = False
     capture_indent = after_nl = after_indent = False
-    after_async = False
     accept_keyword = False
     seen_lambdas = 0
     for tok in tokens:
@@ -194,12 +193,8 @@ def parse(tokens: Iterable[str]) -> Block:
             if not tok.isspace():
                 accept_keyword = False
             if tok in KEYWORDS and all(b[1] for b in brace_stack):
-                if not after_async:
-                    result.append(Block())
-                    in_head = True
-                    after_async = tok == "async"
-                else:
-                    after_async = False
+                result.append(Block())
+                in_head = True
         if in_head:
             if tok == "lambda":
                 seen_lambdas += 1
