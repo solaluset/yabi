@@ -220,6 +220,7 @@ def parse(tokens: Iterable[str]) -> Block:
             brace_stack.append((BRACES[tok], block_started))
             if block_started:
                 indent_stack.append(None)
+                accept_keyword = True
         elif tok in BRACES.values():
             try:
                 brace, block_finished = brace_stack.pop()
