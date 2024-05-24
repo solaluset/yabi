@@ -52,7 +52,8 @@ def expand_semicolons(tokens: Iterable[str]) -> Generator[str, None, None]:
         elif after_semicolon:
             after_semicolon = False
             yield "\n"
-            yield indent
+            if indent:
+                yield indent
             if tok.isspace():
                 continue
         yield tok
@@ -153,7 +154,8 @@ def parse(tokens: Iterable[str]) -> Block:
     indent_stack = [""]
     result = Block()
     in_head = after_colon = finish_on_nl = False
-    capture_indent = after_nl = after_indent = False
+    capture_indent = after_indent = False
+    after_nl = True
     accept_keyword = False
     seen_lambdas = 0
     for tok in tokens:
@@ -218,7 +220,10 @@ def parse(tokens: Iterable[str]) -> Block:
             if block_started:
                 indent_stack.append(None)
         elif tok in BRACES.values():
-            brace, block_finished = brace_stack.pop()
+            try:
+                brace, block_finished = brace_stack.pop()
+            except IndexError:
+                raise SyntaxError(f"unmatched '{tok}'")
             accept_keyword = block_finished
             if brace != tok:
                 raise SyntaxError(
@@ -228,13 +233,13 @@ def parse(tokens: Iterable[str]) -> Block:
             if block_finished:
                 result.finish()
                 skip = True
-                assert (
-                    indent_stack.pop() is None
-                ), "indented block was not properly closed"
+                if indent_stack.pop() is not None:
+                    raise SyntaxError("indented block was not properly closed")
         if not skip:
             result.append(tok)
     for i in indent_stack:
-        assert i is not None, "there is an unclosed block"
+        if i is None:
+            raise SyntaxError("there is an unclosed block")
         result.finish()
     if not result.finished:
         raise SyntaxError("there is an unclosed block")

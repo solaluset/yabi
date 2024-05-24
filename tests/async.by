@@ -1,9 +1,1 @@
-import asyncio
-
-
-async def main() {
-    print("hello")
-}
-
-
-asyncio.run(main())
+import asyncio; async def main() { print("hello") } asyncio.run(main())
