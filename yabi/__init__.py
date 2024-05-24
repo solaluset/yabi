@@ -19,7 +19,7 @@ def preproc(src, p=None):
             p = PyPreprocessor(disabled=True)
     res = preprocess(src, p)
     if isinstance(src, TextIOBase):
-        res = to_pure_python(res + "\n\n")
+        res = to_pure_python(res)
     return res
 
 
@@ -47,7 +47,7 @@ def console():
             break
         while True:
             try:
-                code = to_pure_python(code + "\n\n")
+                code = to_pure_python(code)
                 break
             except SyntaxError as e:
                 if e.args[0] != UNCLOSED_BLOCK_ERROR:

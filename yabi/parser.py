@@ -250,7 +250,7 @@ def parse(tokens: Iterable[str]) -> Block:
 
 
 def _transform(code: str, python: bool) -> str:
-    return parse(expand_semicolons(tokenize(code))).unparse(python)
+    return parse(expand_semicolons(tokenize(code + "\n"))).unparse(python)
 
 
 def to_pure_python(code: str):
