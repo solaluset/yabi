@@ -220,7 +220,10 @@ def parse(tokens: Iterable[str]) -> Block:
             if block_started:
                 indent_stack.append(None)
         elif tok in BRACES.values():
-            brace, block_finished = brace_stack.pop()
+            try:
+                brace, block_finished = brace_stack.pop()
+            except IndexError:
+                raise SyntaxError(f"unmatched '{tok}'")
             accept_keyword = block_finished
             if brace != tok:
                 raise SyntaxError(
