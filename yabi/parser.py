@@ -52,7 +52,8 @@ def expand_semicolons(tokens: Iterable[str]) -> Generator[str, None, None]:
         elif after_semicolon:
             after_semicolon = False
             yield "\n"
-            yield indent
+            if indent:
+                yield indent
             if tok.isspace():
                 continue
         yield tok
