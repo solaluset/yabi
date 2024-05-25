@@ -1,3 +1,4 @@
+from __future__ import annotations
 import sys
 from io import TextIOBase
 from codeop import CommandCompiler
