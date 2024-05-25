@@ -7,7 +7,7 @@ import pwcp
 from pwcp import main as p_main
 from pwcp.preprocessor import PyPreprocessor, preprocess
 
-from .parser import UNCLOSED_BLOCK_ERROR, to_bython, to_pure_python
+from .parser import UNCLOSED_BLOCK_ERROR, to_bython, _to_pure_python_inner, to_pure_python
 
 
 EXTENSION = ".by"
@@ -74,7 +74,7 @@ def console():
 def _read_braced(code: str, preprocessor: PyPreprocessor) -> tuple[str, str]:
     while True:
         try:
-            parsed = to_pure_python(preproc(code, preprocessor))
+            parsed, first_block_is_braced = _to_pure_python_inner(preproc(code, preprocessor))
         except SyntaxError as e:
             if e.args[0] != UNCLOSED_BLOCK_ERROR:
                 print_exc()
@@ -84,7 +84,7 @@ def _read_braced(code: str, preprocessor: PyPreprocessor) -> tuple[str, str]:
             except EOFError:
                 return "", ""
         else:
-            if not code.endswith("\n"):
+            if not first_block_is_braced and not code.endswith("\n"):
                 parsed = parsed.rstrip("\n")
             return code, parsed
 
