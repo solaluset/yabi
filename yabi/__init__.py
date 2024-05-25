@@ -39,6 +39,7 @@ def console():
     except ImportError:
         pass
     compiler = CommandCompiler()
+    namespace = {}
     while True:
         try:
             code = input(">>> ")
@@ -64,7 +65,7 @@ def console():
             except EOFError:
                 break
         try:
-            exec(compiled or "")
+            exec(compiled or "", namespace)
         except BaseException:
             print_exc()
 
