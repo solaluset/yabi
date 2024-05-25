@@ -31,6 +31,7 @@ def main(args=None):
     if args or len(sys.argv) > 1:
         p_main(*args)
     else:
+        pwcp.hooks.install()
         console()
 
 
