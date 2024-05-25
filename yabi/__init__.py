@@ -39,6 +39,7 @@ def console():
     except ImportError:
         pass
     compiler = CommandCompiler()
+    preprocessor = PyPreprocessor(disabled=True)
     namespace = {}
     while True:
         try:
@@ -46,7 +47,7 @@ def console():
         except EOFError:
             print()
             break
-        code, parsed = _read_braced(code)
+        code, parsed = _read_braced(code, preprocessor)
         compiled = None
         while True:
             try:
@@ -63,17 +64,17 @@ def console():
                 code += "\n" + input("... ")
             except EOFError:
                 break
-            code, parsed = _read_braced(code)
+            code, parsed = _read_braced(code, preprocessor)
         try:
             exec(compiled or "", namespace)
         except BaseException:
             print_exc()
 
 
-def _read_braced(code):
+def _read_braced(code: str, preprocessor: PyPreprocessor) -> tuple[str, str]:
     while True:
         try:
-            parsed = to_pure_python(code)
+            parsed = to_pure_python(preproc(code, preprocessor))
         except SyntaxError as e:
             if e.args[0] != UNCLOSED_BLOCK_ERROR:
                 print_exc()
