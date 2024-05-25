@@ -5,7 +5,7 @@ from unittest.mock import patch
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
-from yabi import main
+from yabi import main, console
 
 
 def test_regular():
@@ -42,3 +42,23 @@ def test_async():
     with patch("sys.stdout", new=StringIO()):
         main(["tests/async.by"])
         assert sys.stdout.getvalue() == "hello\n"
+
+
+def test_console():
+    code = """
+for i in range(
+    10
+) {
+    if i % 2 { print(i) }
+}
+    """.strip()
+    with patch("sys.stdout", new=StringIO()), patch("sys.stdin", new=StringIO(code)):
+        console()
+        assert sys.stdout.getvalue() == """
+>>> ... ... ... ... 1
+3
+5
+7
+9
+>>>
+        """.strip() + " \n"
