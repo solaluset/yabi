@@ -45,26 +45,14 @@ def console():
         except EOFError:
             print()
             break
-        while True:
-            try:
-                code = to_pure_python(code)
-                break
-            except SyntaxError as e:
-                if e.args[0] != UNCLOSED_BLOCK_ERROR:
-                    print_exc()
-                    code = ""
-                    break
-                try:
-                    code += "\n" + input("... ")
-                except EOFError:
-                    break
+        code, parsed = _read_braced(code)
         compiled = None
         while True:
             try:
-                compiled = compiler(code, "<console>", "single")
+                compiled = compiler(parsed, "<console>", "single")
             except SyntaxError:
                 try:
-                    compiled = compiler(code, "<console>", "exec")
+                    compiled = compiler(parsed, "<console>", "exec")
                 except SyntaxError:
                     print_exc()
                     break
@@ -72,12 +60,31 @@ def console():
                 break
             try:
                 code += "\n" + input("... ")
+                code, parsed = _read_braced(code)
             except EOFError:
                 break
         try:
             exec(compiled or "")
         except BaseException:
             print_exc()
+
+
+def _read_braced(code):
+    while True:
+        try:
+            parsed = to_pure_python(code)
+        except SyntaxError as e:
+            if e.args[0] != UNCLOSED_BLOCK_ERROR:
+                print_exc()
+                return "", ""
+            try:
+                code += "\n" + input("... ")
+            except EOFError:
+                return "", ""
+        else:
+            if not code.endswith("\n"):
+                parsed = parsed.rstrip("\n")
+            return code, parsed
 
 
 def convert_main():
