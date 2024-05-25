@@ -61,9 +61,9 @@ def console():
                 break
             try:
                 code += "\n" + input("... ")
-                code, parsed = _read_braced(code)
             except EOFError:
                 break
+            code, parsed = _read_braced(code)
         try:
             exec(compiled or "", namespace)
         except BaseException:
