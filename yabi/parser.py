@@ -150,7 +150,7 @@ class Block:
         return result + body
 
 
-def parse(tokens: Iterable[str]) -> Block:
+def parse(tokens: Iterable[str]) -> tuple[Block, bool | None]:
     brace_stack = []
     indent_stack = [""]
     result = Block()
@@ -158,6 +158,7 @@ def parse(tokens: Iterable[str]) -> Block:
     capture_indent = after_indent = False
     after_nl = True
     accept_keyword = False
+    first_block_is_braced = None
     seen_lambdas = 0
     for tok in tokens:
         block_started = False
@@ -214,6 +215,8 @@ def parse(tokens: Iterable[str]) -> Block:
                 in_head = False
                 block_started = True
                 after_colon = tok == ":"
+                if first_block_is_braced is None:
+                    first_block_is_braced = not after_colon
             else:
                 result.head_append(tok)
         skip = in_head or block_started
@@ -246,16 +249,21 @@ def parse(tokens: Iterable[str]) -> Block:
         result.finish()
     if not result.finished:
         raise SyntaxError(UNCLOSED_BLOCK_ERROR)
-    return result
+    return result, first_block_is_braced
 
 
-def _transform(code: str, python: bool) -> str:
-    return parse(expand_semicolons(tokenize(code + "\n"))).unparse(python)
+def _transform(code: str, python: bool) -> tuple[str, bool | None]:
+    result, first_block_is_braced = parse(expand_semicolons(tokenize(code + "\n")))
+    return result.unparse(python), first_block_is_braced
 
 
-def to_pure_python(code: str):
+def _to_pure_python_inner(code: str) -> tuple[str, bool | None]:
     return _transform(code, True)
 
 
-def to_bython(code: str):
-    return _transform(code, False)
+def to_pure_python(code: str) -> str:
+    return _to_pure_python_inner(code)[0]
+
+
+def to_bython(code: str) -> str:
+    return _transform(code, False)[0]

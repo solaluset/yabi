@@ -51,7 +51,11 @@ for i in range(
 ) {
     if i % 2 { print(i) }
 }
-    """.strip()
+if True:
+    print(1)
+    print(2)
+    print(3)
+    """.strip() + "\n\n"
     with patch("sys.stdout", new=StringIO()), patch("sys.stdin", new=StringIO(code)):
         console()
         assert sys.stdout.getvalue() == """
@@ -60,5 +64,8 @@ for i in range(
 5
 7
 9
+>>> ... ... ... ... 1
+2
+3
 >>>
         """.strip() + " \n"

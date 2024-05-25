@@ -1,3 +1,4 @@
+from __future__ import annotations
 import sys
 from io import TextIOBase
 from codeop import CommandCompiler
@@ -7,7 +8,7 @@ import pwcp
 from pwcp import main as p_main
 from pwcp.preprocessor import PyPreprocessor, preprocess
 
-from .parser import UNCLOSED_BLOCK_ERROR, to_bython, to_pure_python
+from .parser import UNCLOSED_BLOCK_ERROR, to_bython, _to_pure_python_inner, to_pure_python
 
 
 EXTENSION = ".by"
@@ -39,32 +40,22 @@ def console():
     except ImportError:
         pass
     compiler = CommandCompiler()
+    preprocessor = PyPreprocessor(disabled=True)
+    namespace = {}
     while True:
         try:
             code = input(">>> ")
         except EOFError:
             print()
             break
-        while True:
-            try:
-                code = to_pure_python(code)
-                break
-            except SyntaxError as e:
-                if e.args[0] != UNCLOSED_BLOCK_ERROR:
-                    print_exc()
-                    code = ""
-                    break
-                try:
-                    code += "\n" + input("... ")
-                except EOFError:
-                    break
+        code, parsed = _read_braced(code, preprocessor)
         compiled = None
         while True:
             try:
-                compiled = compiler(code, "<console>", "single")
+                compiled = compiler(parsed, "<console>", "single")
             except SyntaxError:
                 try:
-                    compiled = compiler(code, "<console>", "exec")
+                    compiled = compiler(parsed, "<console>", "exec")
                 except SyntaxError:
                     print_exc()
                     break
@@ -74,10 +65,29 @@ def console():
                 code += "\n" + input("... ")
             except EOFError:
                 break
+            code, parsed = _read_braced(code, preprocessor)
         try:
-            exec(compiled or "")
+            exec(compiled or "", namespace)
         except BaseException:
             print_exc()
+
+
+def _read_braced(code: str, preprocessor: PyPreprocessor) -> tuple[str, str]:
+    while True:
+        try:
+            parsed, first_block_is_braced = _to_pure_python_inner(preproc(code, preprocessor))
+        except SyntaxError as e:
+            if e.args[0] != UNCLOSED_BLOCK_ERROR:
+                print_exc()
+                return "", ""
+            try:
+                code += "\n" + input("... ")
+            except EOFError:
+                return "", ""
+        else:
+            if not first_block_is_braced and not code.endswith("\n"):
+                parsed = parsed.rstrip("\n")
+            return code, parsed
 
 
 def convert_main():
