@@ -5,7 +5,8 @@ from unittest.mock import patch
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
-from yabi import YabiConsole, main
+from yabi import main
+from yabi.console import YabiConsole
 
 
 def test_regular():
