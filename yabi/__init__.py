@@ -22,14 +22,12 @@ def preproc(src, p=None):
     return res
 
 
-def main(args=None):
+def main(args=sys.argv[1:]):
     pwcp.config.FILE_EXTENSIONS.append(EXTENSION)
     pwcp.preprocessor.preprocess = preproc
-    args = (args,) if args is not None else ()
-    if args or len(sys.argv) > 1:
-        p_main(*args)
-    else:
-        p_main(["-m", "yabi.console"])
+    if all(a.startswith("--") for a in args):
+        args.extend(("-m", f"{__package__}.console"))
+    p_main(args)
 
 
 def convert_main():
