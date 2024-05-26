@@ -5,7 +5,7 @@ from unittest.mock import patch
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
-from yabi import main, console
+from yabi import YabiConsole, main
 
 
 def test_regular():
@@ -57,7 +57,7 @@ if True:
     print(3)
     """.strip() + "\n\n"
     with patch("sys.stdout", new=StringIO()), patch("sys.stdin", new=StringIO(code)):
-        console()
+        YabiConsole().interact()
         assert sys.stdout.getvalue() == """
 >>> ... ... ... ... 1
 3
@@ -68,4 +68,4 @@ if True:
 2
 3
 >>>
-        """.strip() + " \n"
+        """.strip() + " "
