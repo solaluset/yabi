@@ -7,12 +7,12 @@ Ever wanted to use braces instead of indentation in Python? No? Well, it's possi
 It doesn't have problems with dicts.
 However, it's not perfect (`match` is not supported).
 
-If your condition starts with `{`, remember to parenthesise it:
+If your condition contains `{`, remember to parenthesise it:
 ```bython
 # Wrong
-if {a for a in range(n)} { print("Hello") }
+if x := {a for a in range(n)} { print("Hello") }
 # Correct
-if ({a for a in range(n)}) { print("Hello") }
+if (x := {a for a in range(n)}) { print("Hello") }
 ```
 
 ## Perfect for one-liners
