@@ -52,6 +52,7 @@ for i in range(
 ) {
     if i % 2 { print(i) }
 }
+
 if True:
     print(1)
     print(2)
@@ -60,7 +61,7 @@ if True:
     with patch("sys.stdout", new=StringIO()), patch("sys.stdin", new=StringIO(code)):
         YabiConsole().interact()
         assert sys.stdout.getvalue() == """
->>> ... ... ... ... 1
+>>> ... ... ... ... ... 1
 3
 5
 7

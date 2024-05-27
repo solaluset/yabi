@@ -4,7 +4,7 @@ from code import InteractiveConsole
 from pwcp.preprocessor import PyPreprocessor, PreprocessorError
 
 from . import preproc
-from .parser import UNCLOSED_BLOCK_ERROR, _to_pure_python_inner
+from .parser import UNCLOSED_BLOCK_ERROR, to_pure_python
 
 
 class YabiConsole(InteractiveConsole):
@@ -16,7 +16,7 @@ class YabiConsole(InteractiveConsole):
 
     def runsource(self, source, filename="<input>", symbol="single") -> bool:
         try:
-            parsed, first_block_is_braced = _to_pure_python_inner(preproc(source, self.preprocessor))
+            parsed = to_pure_python(preproc(source, self.preprocessor))
         except PreprocessorError:
             self.showtraceback()
             return False
@@ -25,7 +25,7 @@ class YabiConsole(InteractiveConsole):
                 return True
             self.showtraceback()
             return False
-        if not first_block_is_braced and not source.endswith("\n"):
+        if not source.endswith("\n"):
             parsed = parsed.rstrip("\n")
         return super().runsource(parsed, filename, symbol)
 
