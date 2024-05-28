@@ -1,5 +1,7 @@
 from __future__ import annotations
+from io import StringIO
 from typing import Generator, Iterable
+from tokenize import OP, generate_tokens
 
 from pypp.parser import default_lexer
 
@@ -18,6 +20,10 @@ KEYWORDS = {
     "while",
     "with",
 }
+SOFT_KEYWORDS = {
+    "match",
+    "case",
+}
 BRACES = {
     "(": ")",
     "[": "]",
@@ -32,6 +38,11 @@ def tokenize(text: str) -> Generator[str, None, None]:
     lexer.input(text)
     while token := lexer.token():
         yield token.value
+
+
+def get_token_type(token: str) -> int:
+    tok = next(generate_tokens(StringIO(token).readline))
+    return tok.type
 
 
 def expand_semicolons(tokens: Iterable[str]) -> Generator[str, None, None]:
@@ -125,9 +136,13 @@ class Block:
                     del head[0]
                 while head and head[-1].isspace():
                     del head[-1]
-                if pure_python and head and head[0] == "(" and head[-1] == ")":
-                    if result != "except" or "as" in head:
+                if pure_python:
+                    if (
+                        (head and head[0] == "(" and head[-1] == ")")
+                        and (result != "except" or "as" in head)
+                    ):
                         head = head[1:-1]
+                    head = [i for i in head if i != "\n"]
                 indent = " " * (depth - 1) * INDENT_SIZE
                 result = (indent + result + " " + "".join(head)).rstrip()
             if pure_python:
@@ -150,6 +165,50 @@ class Block:
         return result + body
 
 
+def _is_op(token: str) -> bool:
+    if token in BRACES or token in BRACES.values():
+        return False
+    return get_token_type(token) == OP
+
+
+def _is_soft_kw(tokens: list[tokens], start: int) -> bool:
+    if tokens[start] not in SOFT_KEYWORDS:
+        return False
+    tokens_range = range(start + 1, len(tokens))
+    try:
+        first_token = next(tokens[i] for i in tokens_range if not tokens[i].isspace())
+    except StopIteration:
+        return False
+    if _is_op(first_token):
+        return False
+    brace_stack = []
+    seen_nl = False
+    prev_tok = None
+    for i in tokens_range:
+        tok = tokens[i]
+        if tok == "\n" and not brace_stack:
+            seen_nl = True
+        if tok.isspace():
+            continue
+        if tok in BRACES:
+            brace_stack.append(tok)
+        elif tok in BRACES.values():
+            try:
+                if BRACES[brace_stack.pop()] != tok:
+                    return False
+            except IndexError:
+                return False
+        if (
+            (brace_stack == ["{"] and not _is_op(prev_tok))
+            or (tok == ":" and not brace_stack)
+        ):
+            return True
+        if seen_nl:
+            return False
+        prev_tok = tok
+    return False
+
+
 def parse(tokens: Iterable[str]) -> Block:
     brace_stack = []
     indent_stack = [""]
@@ -167,6 +226,7 @@ def parse(tokens: Iterable[str]) -> Block:
                 after_colon = False
                 capture_indent = True
             elif not tok.isspace():
+                after_colon = False
                 finish_on_nl = True
         if after_indent:
             after_indent = False
@@ -197,7 +257,7 @@ def parse(tokens: Iterable[str]) -> Block:
         elif accept_keyword:
             if not tok.isspace():
                 accept_keyword = False
-            if tok in KEYWORDS and all(b[1] for b in brace_stack):
+            if (tok in KEYWORDS or _is_soft_kw(tokens, i)) and all(b[1] for b in brace_stack):
                 result.append(Block())
                 in_head = True
         if in_head:
@@ -219,7 +279,7 @@ def parse(tokens: Iterable[str]) -> Block:
                 result.head_append(tok)
         skip = in_head or block_started
         if tok in BRACES:
-            brace_stack.append((BRACES[tok], block_started))
+            brace_stack.append((tok, block_started))
             if block_started:
                 indent_stack.append(None)
                 accept_keyword = True
@@ -229,10 +289,10 @@ def parse(tokens: Iterable[str]) -> Block:
             except IndexError:
                 raise SyntaxError(f"unmatched '{tok}'")
             accept_keyword = block_finished
-            if brace != tok:
+            if BRACES[brace] != tok:
                 raise SyntaxError(
                     f"closing parenthesis '{tok}' does not match"
-                    f"opening parenthesis '{brace}'"
+                    f" opening parenthesis '{brace}'"
                 )
             if block_finished:
                 result.finish()

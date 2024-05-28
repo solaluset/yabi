@@ -45,6 +45,12 @@ def test_async():
         assert sys.stdout.getvalue() == "hello\n"
 
 
+def test_match():
+    with patch("sys.stdout", new=StringIO()):
+        main(["tests/match.by"])
+        assert sys.stdout.getvalue() == "1\n2\n"
+
+
 def test_console():
     code = """
 for i in range(
