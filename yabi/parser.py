@@ -141,6 +141,8 @@ class Block:
             i += 1
 
     def unparse(self, pure_python=True, depth=0) -> str:
+        outer_indent = (depth - 1) * INDENT_SIZE * " "
+        inner_indent = depth * INDENT_SIZE * " "
         if self.head:
             result, *head = self.head
             if head:
@@ -158,25 +160,23 @@ class Block:
                 elif _has_opening_brace(head):
                     head.insert(0, "(")
                     head.append(")")
-                indent = " " * (depth - 1) * INDENT_SIZE
-                result = (indent + result + " " + "".join(head)).rstrip()
+                result = (outer_indent + result + " " + "".join(head)).rstrip()
             if pure_python:
                 result += ":\n"
             else:
                 result += " {\n"
         else:
             result = ""
-        indent = " " * (depth) * INDENT_SIZE
-        self.reindent(indent)
+        self.reindent(inner_indent)
         body = "".join(
             child.unparse(pure_python, depth + 1) if isinstance(child, Block) else child
             for child in self.body
         )
         if not pure_python:
             if depth != 0:
-                body += "\n}"
+                body += "\n" + outer_indent + "}"
         elif not body or body.isspace():
-            body = indent + "pass"
+            body = inner_indent + "pass"
         return result + body
 
 
