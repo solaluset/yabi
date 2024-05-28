@@ -171,16 +171,16 @@ def _is_op(token: str) -> bool:
     return get_token_type(token) == OP
 
 
-def _is_soft_kw(tokens: list[tokens], start: int) -> bool:
-    if tokens[start] not in SOFT_KEYWORDS:
-        return False
+def _get_head_terminator(tokens: list[tokens], start: int, soft: bool) -> str | None:
+    if tokens[start] not in (SOFT_KEYWORDS if soft else KEYWORDS):
+        return None
     tokens_range = range(start + 1, len(tokens))
     try:
         first_token = next(tokens[i] for i in tokens_range if not tokens[i].isspace())
     except StopIteration:
-        return False
+        return None
     if _is_op(first_token):
-        return False
+        return None
     brace_stack = []
     seen_nl = False
     prev_tok = None
@@ -195,18 +195,18 @@ def _is_soft_kw(tokens: list[tokens], start: int) -> bool:
         elif tok in BRACES.values():
             try:
                 if BRACES[brace_stack.pop()] != tok:
-                    return False
+                    return None
             except IndexError:
-                return False
+                return None
         if (
             (brace_stack == ["{"] and not _is_op(prev_tok))
             or (tok == ":" and not brace_stack)
         ):
-            return True
+            return tok
         if seen_nl:
-            return False
+            return None
         prev_tok = tok
-    return False
+    return None
 
 
 def parse(tokens: Iterable[str]) -> Block:
@@ -257,9 +257,11 @@ def parse(tokens: Iterable[str]) -> Block:
         elif accept_keyword:
             if not tok.isspace():
                 accept_keyword = False
-            if (tok in KEYWORDS or _is_soft_kw(tokens, i)) and all(b[1] for b in brace_stack):
-                result.append(Block())
-                in_head = True
+            if not in_head:
+                head_term = _get_head_terminator(tokens, i, False) or _get_head_terminator(tokens, i, True)
+                if head_term and all(b[1] for b in brace_stack):
+                    result.append(Block())
+                    in_head = True
         if in_head:
             if tok == "lambda":
                 seen_lambdas += 1
@@ -268,7 +270,7 @@ def parse(tokens: Iterable[str]) -> Block:
                 seen_lambdas -= 1
                 result.head_append(tok)
             elif (
-                tok in {"{", ":"}
+                tok == head_term
                 and all(b[1] for b in brace_stack)
                 and not seen_lambdas
             ):
