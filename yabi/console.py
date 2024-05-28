@@ -21,7 +21,7 @@ class YabiConsole(InteractiveConsole):
             self.showtraceback()
             return False
         except SyntaxError as e:
-            if e.args[0] == UNCLOSED_BLOCK_ERROR:
+            if e.args[0] == UNCLOSED_BLOCK_ERROR or e.args[0].startswith("Unterminated"):
                 return True
             self.showtraceback()
             return False
