@@ -183,6 +183,7 @@ def _get_head_terminator(tokens: list[tokens], start: int, soft: bool) -> str | 
         return None
     brace_stack = []
     seen_nl = False
+    potential_block = False
     prev_tok = None
     for i in tokens_range:
         tok = tokens[i]
@@ -198,15 +199,20 @@ def _get_head_terminator(tokens: list[tokens], start: int, soft: bool) -> str | 
                     return None
             except IndexError:
                 return None
-        if (
-            (brace_stack == ["{"] and not _is_op(prev_tok))
-            or (tok == ":" and not brace_stack)
-        ):
-            return tok
-        if seen_nl:
+        if not brace_stack:
+            if tok == ":":
+                return ":"
+            if potential_block:
+                next_tok = next((tokens[j] for j in range(i + 1, len(tokens)) if not tokens[j].isspace()), None)
+                if not _is_op(next_tok):
+                    return "{"
+                return ":"
+        if brace_stack == ["{"] and not _is_op(prev_tok):
+            potential_block = True
+        if seen_nl and not potential_block:
             return None
         prev_tok = tok
-    return None
+    return "{" if potential_block else None
 
 
 def parse(tokens: Iterable[str]) -> Block:
