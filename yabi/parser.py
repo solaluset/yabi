@@ -1,7 +1,7 @@
 from __future__ import annotations
 from io import StringIO
 from typing import Generator, Iterable
-from tokenize import OP, generate_tokens
+from tokenize import NAME, OP, generate_tokens
 
 from pypp.parser import default_lexer
 
@@ -69,6 +69,18 @@ def expand_semicolons(tokens: Iterable[str]) -> Generator[str, None, None]:
             if tok.isspace():
                 continue
         yield tok
+
+
+def _has_opening_brace(tokens: list[str]) -> bool:
+    stack = []
+    for tok in tokens:
+        if tok in BRACES:
+            stack.append(tok)
+        elif tok in BRACES.values():
+            stack.pop()
+        if stack == ["{"]:
+            return True
+    return False
 
 
 class Block:
@@ -143,6 +155,9 @@ class Block:
                     ):
                         head = head[1:-1]
                     head = [i for i in head if i != "\n"]
+                elif _has_opening_brace(head):
+                    head.insert(0, "(")
+                    head.append(")")
                 indent = " " * (depth - 1) * INDENT_SIZE
                 result = (indent + result + " " + "".join(head)).rstrip()
             if pure_python:
@@ -182,13 +197,13 @@ def _get_head_terminator(tokens: list[tokens], start: int, soft: bool) -> str | 
     if _is_op(first_token):
         return None
     brace_stack = []
-    seen_nl = False
+    after_nl = False
     potential_block = False
     prev_tok = None
     for i in tokens_range:
         tok = tokens[i]
         if tok == "\n" and not brace_stack:
-            seen_nl = True
+            after_nl = True
         if tok.isspace():
             continue
         if tok in BRACES:
@@ -209,8 +224,10 @@ def _get_head_terminator(tokens: list[tokens], start: int, soft: bool) -> str | 
                 return ":"
         if brace_stack == ["{"] and not _is_op(prev_tok):
             potential_block = True
-        if seen_nl and not potential_block:
-            return None
+        if after_nl:
+            after_nl = False
+            if not potential_block and get_token_type(tok) == NAME:
+                return None
         prev_tok = tok
     return "{" if potential_block else None
 
