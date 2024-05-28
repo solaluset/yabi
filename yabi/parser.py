@@ -162,9 +162,9 @@ class Block:
                     head.append(")")
                 result = (outer_indent + result + " " + "".join(head)).rstrip()
             if pure_python:
-                result += ":\n"
+                result += ":"
             else:
-                result += " {\n"
+                result += " {"
         else:
             result = ""
         self.reindent(inner_indent)
@@ -177,7 +177,7 @@ class Block:
                 body += "\n" + outer_indent + "}"
         elif not body or body.isspace():
             body = inner_indent + "pass"
-        return result + body
+        return result + "\n" + body.lstrip("\n")
 
 
 def _is_op(token: str) -> bool:
