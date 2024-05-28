@@ -159,7 +159,8 @@ def parse(tokens: Iterable[str]) -> Block:
     after_nl = True
     accept_keyword = False
     seen_lambdas = 0
-    for tok in tokens:
+    tokens = list(tokens)
+    for i, tok in enumerate(tokens):
         block_started = False
         if after_colon:
             if tok in {"\n", "#"}:
