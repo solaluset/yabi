@@ -5,7 +5,7 @@ from unittest.mock import patch
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
-from yabi import main
+from yabi import main, to_bython
 from yabi.console import YabiConsole
 
 
@@ -77,3 +77,22 @@ if True:
 3
 >>>
         """.strip() + " "
+
+
+def test_to_bython():
+    assert to_bython("""
+for i in {1, 2, 3}:
+    if i % 2 == 1:
+        print("Yes")
+    else:
+        print("No")
+    """.strip()) == """
+for (i in {1, 2, 3}) {
+    if i % 2 == 1 {
+        print("Yes")
+    }
+    else {
+        print("No")
+    }
+}
+    """.strip() + "\n"
