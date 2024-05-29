@@ -207,6 +207,8 @@ def _get_head_terminator(tokens: list[tokens], start: int, soft: bool) -> str | 
         first_token = next(tokens[i] for i in tokens_range if not tokens[i].isspace())
     except StopIteration:
         return None
+    if first_token == ":":
+        return ":"
     if _is_op(first_token):
         return None
     brace_stack = []
