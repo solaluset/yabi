@@ -162,6 +162,7 @@ class Block:
                     if (
                         (head and head[0] == "(" and head[-1] == ")")
                         and (result != "except" or "as" in head)
+                        and result not in {"if", "elif", "while"}
                     ):
                         head = head[1:-1]
                     head = [i for i in head if i != "\n"]
