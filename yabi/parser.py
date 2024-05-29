@@ -1,5 +1,7 @@
 from __future__ import annotations
+from io import StringIO
 from typing import Generator, Iterable
+from tokenize import NAME, OP, generate_tokens
 
 from pypp.parser import default_lexer
 
@@ -18,6 +20,10 @@ KEYWORDS = {
     "while",
     "with",
 }
+SOFT_KEYWORDS = {
+    "match",
+    "case",
+}
 BRACES = {
     "(": ")",
     "[": "]",
@@ -32,6 +38,11 @@ def tokenize(text: str) -> Generator[str, None, None]:
     lexer.input(text)
     while token := lexer.token():
         yield token.value
+
+
+def get_token_type(token: str) -> int:
+    tok = next(generate_tokens(StringIO(token).readline))
+    return tok.type
 
 
 def expand_semicolons(tokens: Iterable[str]) -> Generator[str, None, None]:
@@ -58,6 +69,18 @@ def expand_semicolons(tokens: Iterable[str]) -> Generator[str, None, None]:
             if tok.isspace():
                 continue
         yield tok
+
+
+def _has_opening_brace(tokens: list[str]) -> bool:
+    stack = []
+    for tok in tokens:
+        if tok in BRACES:
+            stack.append(tok)
+        elif tok in BRACES.values():
+            stack.pop()
+        if stack == ["{"]:
+            return True
+    return False
 
 
 class Block:
@@ -95,8 +118,13 @@ class Block:
 
     def reindent(self, indent: str):
         after_nl = True
+        braces_opened = 0
         i = 0
         while i < len(self.body):
+            if self.body[i] in BRACES:
+                braces_opened += 1
+            elif self.body[i] in BRACES.values():
+                braces_opened -= 1
             if isinstance(self.body[i], Block):
                 if (
                     i != 0
@@ -106,18 +134,23 @@ class Block:
                 ):
                     del self.body[i - 1]
                     i -= 1
-                self.body.insert(i + 1, "\n")
+                if i + 1 == len(self.body) or self.body[i + 1] != "\n":
+                    self.body.insert(i + 1, "\n")
             elif self.body[i] == "\n":
                 after_nl = True
             elif after_nl:
                 after_nl = False
-                if self.body[i].isspace():
-                    self.body[i] = indent
-                else:
-                    self.body.insert(i, indent)
+                if not braces_opened:
+                    if self.body[i].isspace():
+                        self.body[i] = indent
+                    else:
+                        self.body.insert(i, indent)
+                        i += 1
             i += 1
 
     def unparse(self, pure_python=True, depth=0) -> str:
+        outer_indent = (depth - 1) * INDENT_SIZE * " "
+        inner_indent = depth * INDENT_SIZE * " "
         if self.head:
             result, *head = self.head
             if head:
@@ -125,29 +158,94 @@ class Block:
                     del head[0]
                 while head and head[-1].isspace():
                     del head[-1]
-                if pure_python and head and head[0] == "(" and head[-1] == ")":
-                    if result != "except" or "as" in head:
+                if pure_python:
+                    if (
+                        (head and head[0] == "(" and head[-1] == ")")
+                        and (result != "except" or "as" in head)
+                        and result not in {"if", "elif", "while"}
+                    ):
                         head = head[1:-1]
-                indent = " " * (depth - 1) * INDENT_SIZE
-                result = (indent + result + " " + "".join(head)).rstrip()
+                    head = [i for i in head if i != "\n"]
+                elif _has_opening_brace(head):
+                    head.insert(0, "(")
+                    head.append(")")
+            result = (outer_indent + result + " " + "".join(head)).rstrip()
             if pure_python:
-                result += ":\n"
+                result += ":"
             else:
-                result += " {\n"
+                result += " {"
         else:
             result = ""
-        indent = " " * (depth) * INDENT_SIZE
-        self.reindent(indent)
+        self.reindent(inner_indent)
         body = "".join(
             child.unparse(pure_python, depth + 1) if isinstance(child, Block) else child
             for child in self.body
         )
         if not pure_python:
             if depth != 0:
-                body += "\n}"
+                body = body.rstrip(" ")
+                stripped = body.rstrip("\n")
+                nls = len(body) - len(stripped) - 1
+                body = stripped + "\n" + outer_indent + "}" + "\n" * nls
         elif not body or body.isspace():
-            body = indent + "pass"
-        return result + body
+            body = inner_indent + "pass"
+        if result:
+            result += "\n"
+        return result + body.lstrip("\n")
+
+
+def _is_op(token: str) -> bool:
+    if token in BRACES or token in BRACES.values():
+        return False
+    return get_token_type(token) == OP
+
+
+def _get_head_terminator(tokens: list[tokens], start: int, soft: bool) -> str | None:
+    if tokens[start] not in (SOFT_KEYWORDS if soft else KEYWORDS):
+        return None
+    tokens_range = range(start + 1, len(tokens))
+    try:
+        first_token = next(tokens[i] for i in tokens_range if not tokens[i].isspace())
+    except StopIteration:
+        return None
+    if first_token == ":":
+        return ":"
+    if _is_op(first_token):
+        return None
+    brace_stack = []
+    after_nl = False
+    potential_block = False
+    prev_tok = None
+    for i in tokens_range:
+        tok = tokens[i]
+        if tok == "\n" and not brace_stack:
+            after_nl = True
+        if tok.isspace():
+            continue
+        if tok in BRACES:
+            brace_stack.append(tok)
+        elif tok in BRACES.values():
+            try:
+                if BRACES[brace_stack.pop()] != tok:
+                    return None
+            except IndexError:
+                return None
+        if not brace_stack:
+            if tok == ":":
+                return ":"
+            if potential_block:
+                next_tok = next((tokens[j] for j in range(i + 1, len(tokens)) if not tokens[j].isspace()), None)
+                if not _is_op(next_tok):
+                    return "{"
+                return ":"
+        if brace_stack == ["{"] and not _is_op(prev_tok):
+            potential_block = True
+        if after_nl:
+            after_nl = False
+            if not potential_block and get_token_type(tok) == NAME:
+                return None
+        prev_tok = tok
+    return "{" if potential_block else None
 
 
 def parse(tokens: Iterable[str]) -> Block:
@@ -159,13 +257,15 @@ def parse(tokens: Iterable[str]) -> Block:
     after_nl = True
     accept_keyword = False
     seen_lambdas = 0
-    for tok in tokens:
+    tokens = list(tokens)
+    for i, tok in enumerate(tokens):
         block_started = False
         if after_colon:
             if tok in {"\n", "#"}:
                 after_colon = False
                 capture_indent = True
             elif not tok.isspace():
+                after_colon = False
                 finish_on_nl = True
         if after_indent:
             after_indent = False
@@ -196,9 +296,11 @@ def parse(tokens: Iterable[str]) -> Block:
         elif accept_keyword:
             if not tok.isspace():
                 accept_keyword = False
-            if tok in KEYWORDS and all(b[1] for b in brace_stack):
-                result.append(Block())
-                in_head = True
+            if not in_head:
+                head_term = _get_head_terminator(tokens, i, False) or _get_head_terminator(tokens, i, True)
+                if head_term and all(b[1] for b in brace_stack):
+                    result.append(Block())
+                    in_head = True
         if in_head:
             if tok == "lambda":
                 seen_lambdas += 1
@@ -207,7 +309,7 @@ def parse(tokens: Iterable[str]) -> Block:
                 seen_lambdas -= 1
                 result.head_append(tok)
             elif (
-                tok in {"{", ":"}
+                tok == head_term
                 and all(b[1] for b in brace_stack)
                 and not seen_lambdas
             ):
@@ -218,7 +320,7 @@ def parse(tokens: Iterable[str]) -> Block:
                 result.head_append(tok)
         skip = in_head or block_started
         if tok in BRACES:
-            brace_stack.append((BRACES[tok], block_started))
+            brace_stack.append((tok, block_started))
             if block_started:
                 indent_stack.append(None)
                 accept_keyword = True
@@ -228,10 +330,10 @@ def parse(tokens: Iterable[str]) -> Block:
             except IndexError:
                 raise SyntaxError(f"unmatched '{tok}'")
             accept_keyword = block_finished
-            if brace != tok:
+            if BRACES[brace] != tok:
                 raise SyntaxError(
                     f"closing parenthesis '{tok}' does not match"
-                    f"opening parenthesis '{brace}'"
+                    f" opening parenthesis '{brace}'"
                 )
             if block_finished:
                 result.finish()

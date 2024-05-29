@@ -3,9 +3,11 @@ import sys
 from io import StringIO
 from unittest.mock import patch
 
+from pytest import mark
+
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
-from yabi import main
+from yabi import main, to_bython
 from yabi.console import YabiConsole
 
 
@@ -45,6 +47,20 @@ def test_async():
         assert sys.stdout.getvalue() == "hello\n"
 
 
+def test_nl_after_kw():
+    with patch("sys.stdout", new=StringIO()):
+        main(["tests/nl_after_kw.by"])
+        assert sys.stdout.getvalue() == "1\n"
+
+
+@mark.skipif(sys.version_info < (3, 10), reason="requires python3.10 or higher")
+def test_match():
+    with patch("sys.stdout", new=StringIO()):
+        main(["tests/match.by"])
+        assert sys.stdout.getvalue() == "1\n2\n"
+
+
+@mark.skipif(sys.implementation.name == "pypy" and sys.version_info < (3, 10), reason="pypy's console is weird on older versions")
 def test_console():
     code = """
 for i in range(
@@ -71,3 +87,22 @@ if True:
 3
 >>>
         """.strip() + " "
+
+
+def test_to_bython():
+    assert to_bython("""
+for i in {1, 2, 3}:
+    if i % 2 == 1:
+        print("Yes")
+    else:
+        print("No")
+    """.strip()) == """
+for (i in {1, 2, 3}) {
+    if i % 2 == 1 {
+        print("Yes")
+    }
+    else {
+        print("No")
+    }
+}
+    """.strip() + "\n"

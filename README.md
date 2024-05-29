@@ -5,7 +5,7 @@ Ever wanted to use braces instead of indentation in Python? No? Well, it's possi
 ## Is YABI better than other implementations?
 
 It doesn't have problems with dicts.
-However, it's not perfect (`match` is not supported).
+It can have bugs though, I'd be glad if you opened an issue in case you encounter one.
 
 If your condition contains `{`, remember to parenthesise it:
 ```bython
@@ -23,7 +23,8 @@ But, like, why would you do that?
 ## Converting Python files
 
 You don't need to convert anything because `.py` files can be imported into `.by`.
-YABI provides `yabi-convert` in case you still want to convert, but it gives kinda goofy results (it should still work though).
+YABI provides `yabi-convert` in case you still want to convert.
+The output may be a little weird but should still be correct.
 
 ```bash
 yabi-convert something.py > something.by
