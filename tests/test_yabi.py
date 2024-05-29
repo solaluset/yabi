@@ -3,6 +3,8 @@ import sys
 from io import StringIO
 from unittest.mock import patch
 
+from pytest import mark
+
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
 from yabi import main, to_bython
@@ -45,6 +47,7 @@ def test_async():
         assert sys.stdout.getvalue() == "hello\n"
 
 
+@mark.skipif(sys.version_info < (3, 10), reason="requires python3.10 or higher")
 def test_match():
     with patch("sys.stdout", new=StringIO()):
         main(["tests/match.by"])
