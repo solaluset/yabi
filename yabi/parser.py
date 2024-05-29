@@ -181,7 +181,9 @@ class Block:
                 body = stripped + "\n" + outer_indent + "}" + "\n" * nls
         elif not body or body.isspace():
             body = inner_indent + "pass"
-        return result + "\n" + body.lstrip("\n")
+        if result:
+            result += "\n"
+        return result + body.lstrip("\n")
 
 
 def _is_op(token: str) -> bool:
