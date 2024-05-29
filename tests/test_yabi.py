@@ -54,7 +54,7 @@ def test_match():
         assert sys.stdout.getvalue() == "1\n2\n"
 
 
-@mark.skipif(sys.implementation.name == "pypy" and sys.version_info < (3, 9), reason="pypy's console is weird on older versions")
+@mark.skipif(sys.implementation.name == "pypy" and sys.version_info < (3, 10), reason="pypy's console is weird on older versions")
 def test_console():
     code = """
 for i in range(
