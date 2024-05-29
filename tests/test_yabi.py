@@ -47,6 +47,12 @@ def test_async():
         assert sys.stdout.getvalue() == "hello\n"
 
 
+def test_nl_after_kw():
+    with patch("sys.stdout", new=StringIO()):
+        main(["tests/nl_after_kw.by"])
+        assert sys.stdout.getvalue() == "1\n"
+
+
 @mark.skipif(sys.version_info < (3, 10), reason="requires python3.10 or higher")
 def test_match():
     with patch("sys.stdout", new=StringIO()):
