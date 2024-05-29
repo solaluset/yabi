@@ -68,6 +68,8 @@ if True:
     print(2)
     print(3)
     """.strip() + "\n\n"
+    if sys.implementation.name == "pypy":
+        code = code.replace("(", "{", 1)
     with patch("sys.stdout", new=StringIO()), patch("sys.stdin", new=StringIO(code)):
         YabiConsole().interact()
         assert sys.stdout.getvalue() == """
