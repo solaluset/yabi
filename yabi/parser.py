@@ -168,7 +168,7 @@ class Block:
                 elif _has_opening_brace(head):
                     head.insert(0, "(")
                     head.append(")")
-                result = (outer_indent + result + " " + "".join(head)).rstrip()
+            result = (outer_indent + result + " " + "".join(head)).rstrip()
             if pure_python:
                 result += ":"
             else:
