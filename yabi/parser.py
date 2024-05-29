@@ -118,8 +118,13 @@ class Block:
 
     def reindent(self, indent: str):
         after_nl = True
+        braces_opened = 0
         i = 0
         while i < len(self.body):
+            if self.body[i] in BRACES:
+                braces_opened += 1
+            elif self.body[i] in BRACES.values():
+                braces_opened -= 1
             if isinstance(self.body[i], Block):
                 if (
                     i != 0
@@ -135,10 +140,12 @@ class Block:
                 after_nl = True
             elif after_nl:
                 after_nl = False
-                if self.body[i].isspace():
-                    self.body[i] = indent
-                else:
-                    self.body.insert(i, indent)
+                if not braces_opened:
+                    if self.body[i].isspace():
+                        self.body[i] = indent
+                    else:
+                        self.body.insert(i, indent)
+                        i += 1
             i += 1
 
     def unparse(self, pure_python=True, depth=0) -> str:
