@@ -129,7 +129,8 @@ class Block:
                 ):
                     del self.body[i - 1]
                     i -= 1
-                self.body.insert(i + 1, "\n")
+                if i + 1 == len(self.body) or self.body[i + 1] != "\n":
+                    self.body.insert(i + 1, "\n")
             elif self.body[i] == "\n":
                 after_nl = True
             elif after_nl:
@@ -174,7 +175,10 @@ class Block:
         )
         if not pure_python:
             if depth != 0:
-                body += "\n" + outer_indent + "}"
+                body = body.rstrip(" ")
+                stripped = body.rstrip("\n")
+                nls = len(body) - len(stripped) - 1
+                body = stripped + "\n" + outer_indent + "}" + "\n" * nls
         elif not body or body.isspace():
             body = inner_indent + "pass"
         return result + "\n" + body.lstrip("\n")
