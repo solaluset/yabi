@@ -53,6 +53,12 @@ def test_nl_after_kw():
         assert sys.stdout.getvalue() == "1\n"
 
 
+def test_lambda():
+    with patch("sys.stdout", new=StringIO()):
+        main(["tests/lambda.by"])
+        assert sys.stdout.getvalue() == "Hello\n"
+
+
 @mark.skipif(sys.version_info < (3, 10), reason="requires python3.10 or higher")
 def test_match():
     with patch("sys.stdout", new=StringIO()):

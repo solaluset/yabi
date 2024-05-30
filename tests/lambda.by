@@ -1,0 +1,18 @@
+from __future__ import annotations
+import asyncio
+
+
+def a() {
+    b = 3
+    return lambda {
+        x = 0
+        for i in range(b) {
+            x += i
+        }
+        return lambda { return x }
+    }
+}
+
+assert a()()() == 3
+
+asyncio.run(async lambda { print("Hello") }())
