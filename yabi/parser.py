@@ -288,7 +288,7 @@ def _gen_lambda_name():
     return "_yabi_lambda_" + "".join(choices(ascii_letters, k=16))
 
 
-def _parse_long_lambda(tokens: list[str], i: int, result: Block, lambda_module_code, async_lambda: bool) -> int:
+def _parse_long_lambda(tokens: list[str], i: int, result: Block, lambda_module_code, async_lambda: bool, in_head: bool) -> int:
     i += 1
     brace_stack = []
     body = Block()
@@ -316,7 +316,10 @@ def _parse_long_lambda(tokens: list[str], i: int, result: Block, lambda_module_c
     if not head.startswith("(") or not head.endswith(")"):
         head = "(" + head + ")"
     name = _gen_lambda_name()
-    result.append(name + "()")
+    if in_head:
+        result.head_append(name + "()")
+    else:
+        result.append(name + "()")
     body.head = list(tokenize(("async " if async_lambda else "") + "def _yabi_lambda" + head))
     parsed_body, module_code = parse(body.body)
     body.body = parsed_body.body
@@ -398,7 +401,7 @@ def parse(tokens: Iterable[str]) -> Block:
                 continue
             if terminator != "{":
                 raise SyntaxError("async lambda must use braces")
-            i, lambda_module_code = _parse_long_lambda(tokens, i, result, lambda_module_code, async_lambda)
+            i, lambda_module_code = _parse_long_lambda(tokens, i, result, lambda_module_code, async_lambda, in_head)
             async_lambda = False
             continue
         if in_head:
