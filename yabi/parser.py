@@ -471,15 +471,15 @@ def _insert_import(body: list[Block | str], import_: str):
             after_nl = True
         if isinstance(tok, str) and tok.isspace():
             continue
-        if tok in BRACES:
-            braces_seen += 1
-        elif tok in BRACES.values():
-            braces_seen -= 1
         if after_nl:
             after_nl = False
             if not braces_seen and tok not in {"#", "import", "from"}:
                 body.insert(i, import_)
                 break
+        if tok in BRACES:
+            braces_seen += 1
+        elif tok in BRACES.values():
+            braces_seen -= 1
 
 
 def _transform(code: str, python: bool) -> tuple[str, ModuleType | None]:
