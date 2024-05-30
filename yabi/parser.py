@@ -258,7 +258,9 @@ def parse(tokens: Iterable[str]) -> Block:
     accept_keyword = False
     seen_lambdas = 0
     tokens = list(tokens)
-    for i, tok in enumerate(tokens):
+    i = 0
+    while i < len(tokens):
+        tok = tokens[i]
         block_started = False
         if after_colon:
             if tok in {"\n", "#"}:
@@ -301,6 +303,8 @@ def parse(tokens: Iterable[str]) -> Block:
                 if head_term and all(b[1] for b in brace_stack):
                     result.append(Block())
                     in_head = True
+        if _get_head_terminator(tokens, i, {"lambda"}) == "{":
+            pass
         if in_head:
             if tok == "lambda":
                 seen_lambdas += 1
@@ -342,6 +346,7 @@ def parse(tokens: Iterable[str]) -> Block:
                     raise SyntaxError("indented block was not properly closed")
         if not skip:
             result.append(tok)
+        i += 1
     for i in indent_stack:
         if i is None:
             raise SyntaxError(UNCLOSED_BLOCK_ERROR)
