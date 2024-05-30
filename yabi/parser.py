@@ -56,10 +56,18 @@ def _make_arg(key):
     arg = ast.arg(key)
     arg.lineno = arg.col_offset = 0
     return arg
+
+
+def _make_return(value):
+    arg = ast.Return(value)
+    arg.lineno = arg.col_offset = 0
+    return arg
 """
 LAMBDA_WRAPPER = """
 __all__.append("{name}")
 {name}_tree = ast.parse({code})
+if isinstance({name}_tree.body[0].body[0].body[-1], ast.Expr):
+    {name}_tree.body[0].body[0].body[-1] = _make_return({name}_tree.body[0].body[0].body[-1].value)
 def {name}():
     locals = _getframe().f_back.f_locals
     tree = {name}_tree

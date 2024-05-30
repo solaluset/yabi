@@ -9,7 +9,7 @@ def a() {
         for i in range(b) {
             x += i
         }
-        return lambda { return x }
+        return lambda { x }
     }
 }
 
