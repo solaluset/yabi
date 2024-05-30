@@ -1,11 +1,12 @@
-from __future__ import annotations
+from __future__ import (
+    annotations
+)
 import asyncio
 
 
 def a() {
     b = 3
-    return lambda {
-        x = 0
+    return lambda x {
         for i in range(b) {
             x += i
         }
@@ -13,7 +14,7 @@ def a() {
     }
 }
 
-assert a()()() == 3
+assert a()(0)() == 3
 
 if lambda {} {
     asyncio.run(async lambda { print("Hello") }())
