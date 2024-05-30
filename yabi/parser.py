@@ -1,5 +1,8 @@
 from __future__ import annotations
 from io import StringIO
+from random import choices
+from types import ModuleType
+from string import ascii_letters
 from typing import Generator, Iterable
 from tokenize import NAME, OP, generate_tokens
 
@@ -248,6 +251,75 @@ def _get_head_terminator(tokens: list[tokens], start: int, keywords: set) -> str
     return "{" if potential_block else None
 
 
+def _gen_lambda_name():
+    return "_yabi_lambda_" + "".join(choices(ascii_letters, k=16))
+
+
+LAMBDA_MODULE_HEAD = """
+__all__ = []
+import ast
+try:
+    from sys import _getframe
+except ImportError:
+    def _getframe():
+        try:
+            raise Exception
+        except Exception as e:
+            return e.__traceback__.tb_frame.f_back
+
+
+def _make_arg(key):
+    arg = ast.arg(key)
+    arg.lineno = arg.col_offset = 0
+    return arg
+"""
+LAMBDA_WRAPPER = """
+__all__.append("{name}")
+def {name}():
+    tree = ast.parse({code})
+    locals = _getframe().f_back.f_locals
+    tree.body[0].args.args = [_make_arg(key) for key in locals]
+    ns = {{}}
+    exec(compile(tree, "<yabi-lambda>", "exec"), ns)
+    return ns["yabi_lambda_wrapper"](**locals)
+"""
+
+
+def _parse_long_lambda(tokens: list[str], i: int, result: Block) -> int:
+    i += 1
+    brace_stack = []
+    body = Block()
+    in_body = False
+    while i < len(tokens):
+        tok = tokens[i]
+        if tok in BRACES:
+            brace_stack.append(tok)
+        elif tok in BRACES.values():
+            brace_stack.pop()
+        if not in_body and brace_stack == ["{"]:
+            in_body = True
+            i += 1
+            continue
+        if in_body:
+            if not brace_stack:
+                break
+            body.append(tok)
+        else:
+            body.head_append(tok)
+        i += 1
+    if brace_stack:
+        raise SyntaxError(UNCLOSED_BLOCK_ERROR)
+    head = "".join(body.head).strip()
+    if not head.startswith("(") or not head.endswith(")"):
+        head = "(" + head + ")"
+    name = _gen_lambda_name()
+    result.append(name + "()")
+    body.head = list(tokenize("def _yabi_lambda" + head))
+    code = f"def yabi_lambda_wrapper():\n" + body.unparse(depth=2) + "\n" + " " * INDENT_SIZE + "return _yabi_lambda\n"
+    code = LAMBDA_WRAPPER.format(name=name, code=repr(code))
+    return i + 1, code
+
+
 def parse(tokens: Iterable[str]) -> Block:
     brace_stack = []
     indent_stack = [""]
@@ -257,6 +329,7 @@ def parse(tokens: Iterable[str]) -> Block:
     after_nl = True
     accept_keyword = False
     seen_lambdas = 0
+    lambda_codes = ""
     tokens = list(tokens)
     i = 0
     while i < len(tokens):
@@ -304,7 +377,9 @@ def parse(tokens: Iterable[str]) -> Block:
                     result.append(Block())
                     in_head = True
         if _get_head_terminator(tokens, i, {"lambda"}) == "{":
-            pass
+            i, code = _parse_long_lambda(tokens, i, result)
+            lambda_codes += code
+            continue
         if in_head:
             if tok == "lambda":
                 seen_lambdas += 1
@@ -353,12 +428,19 @@ def parse(tokens: Iterable[str]) -> Block:
         result.finish()
     if not result.finished:
         raise SyntaxError(UNCLOSED_BLOCK_ERROR)
-    return result
+    if lambda_codes:
+        lambda_codes = LAMBDA_MODULE_HEAD + lambda_codes
+        module = ModuleType("yabi_lambdas")
+        exec(lambda_codes, vars(module))
+        result.body.insert(0, "from yabi_lambdas import *\n")
+    else:
+        module = None
+    return result, module
 
 
 def _transform(code: str, python: bool) -> str:
-    result = parse(expand_semicolons(tokenize(code + "\n")))
-    return result.unparse(python)
+    result, module = parse(expand_semicolons(tokenize(code + "\n")))
+    return result.unparse(python), module
 
 
 def to_pure_python(code: str) -> str:
