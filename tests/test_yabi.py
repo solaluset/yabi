@@ -11,53 +11,47 @@ from yabi import main, to_bython
 from yabi.console import YabiConsole
 
 
-def test_regular():
+def check_file(file, desired_output):
     with patch("sys.stdout", new=StringIO()):
-        main(["tests/hello.by"])
-        assert sys.stdout.getvalue() == "Hello\n"
+        main([file])
+        assert sys.stdout.getvalue() == desired_output
+
+
+def test_regular():
+    check_file("tests/hello.by", "Hello\n")
 
 
 def test_mixed():
-    with patch("sys.stdout", new=StringIO()):
-        main(["tests/mixed.by"])
-        assert sys.stdout.getvalue() == "3\n"
+    check_file("tests/mixed.by", "3\n")
 
 
 def test_dict():
-    with patch("sys.stdout", new=StringIO()):
-        main(["tests/dict.by"])
-        assert sys.stdout.getvalue() == "1\n2\n3\nok\n"
+    check_file("tests/dict.by", "1\n2\n3\nok\n")
 
 
 def test_except():
-    with patch("sys.stdout", new=StringIO()):
-        main(["tests/except.by"])
-        assert sys.stdout.getvalue() == "e\ndivision by zero\ne\ne\ndivision by zero\n"
+    check_file("tests/except.by", "e\ndivision by zero\ne\ne\ndivision by zero\n")
 
 
 def test_inline_if():
-    with patch("sys.stdout", new=StringIO()):
-        main(["tests/inline_if.by"])
-        assert sys.stdout.getvalue() == "a\n"
+    check_file("tests/inline_if.by", "a\n")
 
 
 def test_async():
-    with patch("sys.stdout", new=StringIO()):
-        main(["tests/async.by"])
-        assert sys.stdout.getvalue() == "hello\n"
+    check_file("tests/async.by", "hello\n")
 
 
 def test_nl_after_kw():
-    with patch("sys.stdout", new=StringIO()):
-        main(["tests/nl_after_kw.by"])
-        assert sys.stdout.getvalue() == "1\n"
+    check_file("tests/nl_after_kw.by", "1\n")
+
+
+def test_lambda():
+    check_file("tests/lambda.by", "Hello\n")
 
 
 @mark.skipif(sys.version_info < (3, 10), reason="requires python3.10 or higher")
 def test_match():
-    with patch("sys.stdout", new=StringIO()):
-        main(["tests/match.by"])
-        assert sys.stdout.getvalue() == "1\n2\n"
+    check_file("tests/match.by", "1\n2\n")
 
 
 @mark.skipif(sys.implementation.name == "pypy" and sys.version_info < (3, 10), reason="pypy's console is weird on older versions")
@@ -96,7 +90,7 @@ for i in {1, 2, 3}:
         print("Yes")
     else:
         print("No")
-    """.strip()) == """
+    """.strip())[0] == """
 for (i in {1, 2, 3}) {
     if i % 2 == 1 {
         print("Yes")

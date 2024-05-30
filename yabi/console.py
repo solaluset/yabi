@@ -16,7 +16,7 @@ class YabiConsole(InteractiveConsole):
 
     def runsource(self, source, filename="<input>", symbol="single") -> bool:
         try:
-            parsed = to_pure_python(preproc(source, self.preprocessor))
+            parsed, module = to_pure_python(preproc(source, self.preprocessor))
         except PreprocessorError:
             self.showtraceback()
             return False
@@ -27,6 +27,8 @@ class YabiConsole(InteractiveConsole):
             return False
         if not source.endswith("\n"):
             parsed = parsed.rstrip("\n")
+        if module:
+            sys.modules[module.__name__] = module
         return super().runsource(parsed, filename, symbol)
 
     def _compiler(self, source, filename, symbol):

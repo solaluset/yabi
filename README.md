@@ -7,7 +7,7 @@ Ever wanted to use braces instead of indentation in Python? No? Well, it's possi
 It doesn't have problems with dicts.
 It can have bugs though, I'd be glad if you opened an issue in case you encounter one.
 
-If your condition contains `{`, remember to parenthesise it:
+If your condition contains `{` or `lambda`, remember to parenthesise it:
 ```bython
 # Wrong
 if x := {a for a in range(n)} { print("Hello") }
