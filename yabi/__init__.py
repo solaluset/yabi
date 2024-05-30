@@ -19,7 +19,7 @@ def preproc(src, p=None):
     res = preprocess(src, p)
     if isinstance(src, TextIOBase):
         res, module = to_pure_python(res)
-        sys.modules["yabi_lambdas"] = module
+        sys.modules[module.__name__] = module
     return res
 
 

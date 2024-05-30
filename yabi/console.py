@@ -28,7 +28,7 @@ class YabiConsole(InteractiveConsole):
         if not source.endswith("\n"):
             parsed = parsed.rstrip("\n")
         if module:
-            sys.modules["yabi_lambdas"] = module
+            sys.modules[module.__name__] = module
         return super().runsource(parsed, filename, symbol)
 
     def _compiler(self, source, filename, symbol):

@@ -280,7 +280,7 @@ def {name}():
     locals = _getframe().f_back.f_locals
     tree.body[0].args.args = [_make_arg(key) for key in locals]
     ns = {{}}
-    exec(compile(tree, "<yabi-lambda>", "exec"), ns)
+    exec(compile(tree, "<yabi-lambda>", "exec"), globals(), ns)
     return ns["yabi_lambda_wrapper"](**locals)
 """
 
@@ -320,7 +320,7 @@ def _parse_long_lambda(tokens: list[str], i: int, result: Block, lambda_module) 
     code = f"def yabi_lambda_wrapper():\n" + body.unparse(depth=2) + "\n" + " " * INDENT_SIZE + "return _yabi_lambda\n"
     code = LAMBDA_WRAPPER.format(name=name, code=repr(code))
     if not lambda_module:
-        lambda_module = ModuleType("yabi_lambdas")
+        lambda_module = ModuleType("")
         exec(LAMBDA_MODULE_HEAD, vars(lambda_module))
     if module:
         for attr in module.__all__:
@@ -440,10 +440,31 @@ def parse(tokens: Iterable[str]) -> Block:
     return result, lambda_module
 
 
+def _insert_import(body, import_):
+    after_nl = True
+    braces_seen = 0
+    for i, tok in enumerate(body):
+        if tok == "\n":
+            after_nl = True
+        if isinstance(tok, str) and tok.isspace():
+            continue
+        if tok in BRACES:
+            braces_seen += 1
+        elif tok in BRACES.values():
+            braces_seen -= 1
+        if after_nl:
+            after_nl = False
+            if not braces_seen and tok not in {"#", "import", "from"}:
+                body.insert(i, import_)
+                break
+
+
 def _transform(code: str, python: bool) -> str:
     result, module = parse(expand_semicolons(tokenize(code + "\n")))
     if module:
-        result.body.insert(0, "from yabi_lambdas import *\n")
+        code_hash = str(hash(code)).replace("-", "m")
+        module.__name__ = "yabi_lambdas.l_" + code_hash
+        _insert_import(result.body, f"from {module.__name__} import *\n")
     return result.unparse(python), module
 
 
