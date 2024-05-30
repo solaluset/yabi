@@ -1,0 +1,2 @@
+EXTENSION = ".by"
+SAVE_FILES = False

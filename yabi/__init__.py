@@ -6,26 +6,26 @@ import pwcp
 from pwcp import main as p_main
 from pwcp.preprocessor import PyPreprocessor, preprocess
 
+from . import config
 from .parser import to_bython, to_pure_python
-
-
-EXTENSION = ".by"
 
 
 def preproc(src, p=None):
     if p is None:
-        if not isinstance(src, TextIOBase) or src.name.endswith(EXTENSION):
+        if not isinstance(src, TextIOBase) or src.name.endswith(config.EXTENSION):
             p = PyPreprocessor(disabled=True)
     res = preprocess(src, p)
     if isinstance(src, TextIOBase):
         res, module = to_pure_python(res)
-        sys.modules[module.__name__] = module
+        if module:
+            sys.modules[module.__name__] = module
     return res
 
 
 def main(args=sys.argv[1:]):
-    pwcp.config.FILE_EXTENSIONS.append(EXTENSION)
+    pwcp.config.FILE_EXTENSIONS.append(config.EXTENSION)
     pwcp.preprocessor.preprocess = preproc
+    config.SAVE_FILES = "--save-files" in args
     if all(a.startswith("--") for a in args):
         args.extend(("-m", f"{__package__}.console"))
     p_main(args)
