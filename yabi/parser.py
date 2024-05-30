@@ -200,8 +200,8 @@ def _is_op(token: str) -> bool:
     return get_token_type(token) == OP
 
 
-def _get_head_terminator(tokens: list[tokens], start: int, soft: bool) -> str | None:
-    if tokens[start] not in (SOFT_KEYWORDS if soft else KEYWORDS):
+def _get_head_terminator(tokens: list[tokens], start: int, keywords: set) -> str | None:
+    if tokens[start] not in keywords:
         return None
     tokens_range = range(start + 1, len(tokens))
     try:
@@ -297,7 +297,7 @@ def parse(tokens: Iterable[str]) -> Block:
             if not tok.isspace():
                 accept_keyword = False
             if not in_head:
-                head_term = _get_head_terminator(tokens, i, False) or _get_head_terminator(tokens, i, True)
+                head_term = _get_head_terminator(tokens, i, KEYWORDS) or _get_head_terminator(tokens, i, SOFT_KEYWORDS)
                 if head_term and all(b[1] for b in brace_stack):
                     result.append(Block())
                     in_head = True
