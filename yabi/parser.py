@@ -288,7 +288,7 @@ def _gen_lambda_name():
     return "_yabi_lambda_" + "".join(choices(ascii_letters, k=16))
 
 
-def _parse_long_lambda(tokens: list[str], i: int, result: Block, lambda_module_code) -> int:
+def _parse_long_lambda(tokens: list[str], i: int, result: Block, lambda_module_code, async_lambda: bool) -> int:
     i += 1
     brace_stack = []
     body = Block()
@@ -317,13 +317,14 @@ def _parse_long_lambda(tokens: list[str], i: int, result: Block, lambda_module_c
         head = "(" + head + ")"
     name = _gen_lambda_name()
     result.append(name + "()")
-    body.head = list(tokenize("def _yabi_lambda" + head))
+    body.head = list(tokenize(("async " if async_lambda else "") + "def _yabi_lambda" + head))
     parsed_body, module_code = parse(body.body)
     body.body = parsed_body.body
     code = f"def yabi_lambda_wrapper():\n" + body.unparse(depth=2) + "\n" + " " * INDENT_SIZE + "return _yabi_lambda\n"
     code = LAMBDA_WRAPPER.format(name=name, code=repr(code))
     if not lambda_module_code:
-        lambda_module_code = LAMBDA_MODULE_HEAD + code
+        lambda_module_code = LAMBDA_MODULE_HEAD
+    lambda_module_code += code
     if module_code:
         lambda_module_code += module_code.replace(LAMBDA_MODULE_HEAD, "")
     return i + 1, lambda_module_code
@@ -337,6 +338,7 @@ def parse(tokens: Iterable[str]) -> Block:
     capture_indent = after_indent = False
     after_nl = True
     accept_keyword = False
+    async_lambda = False
     seen_lambdas = 0
     lambda_module_code = ""
     tokens = list(tokens)
@@ -377,6 +379,10 @@ def parse(tokens: Iterable[str]) -> Block:
             if finish_on_nl:
                 finish_on_nl = False
                 result.finish()
+        elif tok == "async" and next((tokens[j] for j in range(i + 1, len(tokens)) if not tokens[j].isspace()), None) == "lambda":
+            async_lambda = True
+            i += 1
+            continue
         elif accept_keyword:
             if not tok.isspace():
                 accept_keyword = False
@@ -385,8 +391,15 @@ def parse(tokens: Iterable[str]) -> Block:
                 if head_term and all(b[1] for b in brace_stack):
                     result.append(Block())
                     in_head = True
-        if _get_head_terminator(tokens, i, {"lambda"}) == "{":
-            i, lambda_module_code = _parse_long_lambda(tokens, i, result, lambda_module_code)
+        terminator = _get_head_terminator(tokens, i, {"lambda"})
+        if terminator == "{" or async_lambda:
+            if tok.isspace():
+                i += 1
+                continue
+            if terminator != "{":
+                raise SyntaxError("async lambda must use braces")
+            i, lambda_module_code = _parse_long_lambda(tokens, i, result, lambda_module_code, async_lambda)
+            async_lambda = False
             continue
         if in_head:
             if tok == "lambda":
