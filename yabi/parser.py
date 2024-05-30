@@ -285,7 +285,7 @@ def {name}():
 """
 
 
-def _parse_long_lambda(tokens: list[str], i: int, result: Block) -> int:
+def _parse_long_lambda(tokens: list[str], i: int, result: Block, lambda_module) -> int:
     i += 1
     brace_stack = []
     body = Block()
@@ -315,9 +315,19 @@ def _parse_long_lambda(tokens: list[str], i: int, result: Block) -> int:
     name = _gen_lambda_name()
     result.append(name + "()")
     body.head = list(tokenize("def _yabi_lambda" + head))
+    parsed_body, module = parse(body.body)
+    body.body = parsed_body.body
     code = f"def yabi_lambda_wrapper():\n" + body.unparse(depth=2) + "\n" + " " * INDENT_SIZE + "return _yabi_lambda\n"
     code = LAMBDA_WRAPPER.format(name=name, code=repr(code))
-    return i + 1, code
+    if not lambda_module:
+        lambda_module = ModuleType("yabi_lambdas")
+        exec(LAMBDA_MODULE_HEAD, vars(lambda_module))
+    if module:
+        for attr in module.__all__:
+            lambda_module.__all__.append(attr)
+            setattr(lambda_module, attr, getattr(module, attr))
+    exec(code, vars(lambda_module))
+    return i + 1, lambda_module
 
 
 def parse(tokens: Iterable[str]) -> Block:
@@ -329,7 +339,7 @@ def parse(tokens: Iterable[str]) -> Block:
     after_nl = True
     accept_keyword = False
     seen_lambdas = 0
-    lambda_codes = ""
+    lambda_module = None
     tokens = list(tokens)
     i = 0
     while i < len(tokens):
@@ -377,8 +387,7 @@ def parse(tokens: Iterable[str]) -> Block:
                     result.append(Block())
                     in_head = True
         if _get_head_terminator(tokens, i, {"lambda"}) == "{":
-            i, code = _parse_long_lambda(tokens, i, result)
-            lambda_codes += code
+            i, lambda_module = _parse_long_lambda(tokens, i, result, lambda_module)
             continue
         if in_head:
             if tok == "lambda":
@@ -428,18 +437,13 @@ def parse(tokens: Iterable[str]) -> Block:
         result.finish()
     if not result.finished:
         raise SyntaxError(UNCLOSED_BLOCK_ERROR)
-    if lambda_codes:
-        lambda_codes = LAMBDA_MODULE_HEAD + lambda_codes
-        module = ModuleType("yabi_lambdas")
-        exec(lambda_codes, vars(module))
-        result.body.insert(0, "from yabi_lambdas import *\n")
-    else:
-        module = None
-    return result, module
+    return result, lambda_module
 
 
 def _transform(code: str, python: bool) -> str:
     result, module = parse(expand_semicolons(tokenize(code + "\n")))
+    if module:
+        result.body.insert(0, "from yabi_lambdas import *\n")
     return result.unparse(python), module
 
 
