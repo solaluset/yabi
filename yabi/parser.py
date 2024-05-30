@@ -284,11 +284,11 @@ def _get_head_terminator(tokens: list[tokens], start: int, keywords: set) -> str
     return "{" if potential_block else None
 
 
-def _gen_lambda_name():
+def _gen_lambda_name() -> str:
     return "_yabi_lambda_" + "".join(choices(ascii_letters, k=16))
 
 
-def _parse_long_lambda(tokens: list[str], i: int, result: Block, lambda_module_code, async_lambda: bool, in_head: bool) -> int:
+def _parse_long_lambda(tokens: list[str], i: int, result: Block, lambda_module_code: str, async_lambda: bool, in_head: bool) -> tuple[int, str]:
     i += 1
     brace_stack = []
     body = Block()
@@ -328,12 +328,11 @@ def _parse_long_lambda(tokens: list[str], i: int, result: Block, lambda_module_c
     if not lambda_module_code:
         lambda_module_code = LAMBDA_MODULE_HEAD
     lambda_module_code += code
-    if module_code:
-        lambda_module_code += module_code.replace(LAMBDA_MODULE_HEAD, "")
+    lambda_module_code += module_code.replace(LAMBDA_MODULE_HEAD, "")
     return i + 1, lambda_module_code
 
 
-def parse(tokens: Iterable[str]) -> Block:
+def parse(tokens: Iterable[str]) -> tuple[Block, str]:
     brace_stack = []
     indent_stack = [""]
     result = Block()
@@ -455,7 +454,7 @@ def parse(tokens: Iterable[str]) -> Block:
     return result, lambda_module_code
 
 
-def _insert_import(body, import_):
+def _insert_import(body: list[Block | str], import_: str):
     after_nl = True
     braces_seen = 0
     for i, tok in enumerate(body):
@@ -474,7 +473,7 @@ def _insert_import(body, import_):
                 break
 
 
-def _transform(code: str, python: bool) -> str:
+def _transform(code: str, python: bool) -> tuple[str, ModuleType | None]:
     result, module_code = parse(expand_semicolons(tokenize(code + "\n")))
     if module_code:
         code_hash = md5(code.encode()).hexdigest()
@@ -492,9 +491,9 @@ def _transform(code: str, python: bool) -> str:
     return result.unparse(python), module
 
 
-def to_pure_python(code: str) -> str:
+def to_pure_python(code: str) -> tuple[str, ModuleType | None]:
     return _transform(code, True)
 
 
-def to_bython(code: str) -> str:
+def to_bython(code: str) -> tuple[str, ModuleType | None]:
     return _transform(code, False)
