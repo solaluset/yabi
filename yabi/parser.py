@@ -59,12 +59,13 @@ def _make_arg(key):
 """
 LAMBDA_WRAPPER = """
 __all__.append("{name}")
+{name}_tree = ast.parse({code})
 def {name}():
-    tree = ast.parse({code})
     locals = _getframe().f_back.f_locals
+    tree = {name}_tree
     tree.body[0].args.args = [_make_arg(key) for key in locals]
     ns = {{}}
-    exec(compile(tree, "<yabi-lambda>", "exec"), globals(), ns)
+    exec(compile(tree, "<yabi-lambda>", "exec"), None, ns)
     return ns["yabi_lambda_wrapper"](**locals)
 """
 
