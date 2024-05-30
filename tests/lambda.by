@@ -15,4 +15,6 @@ def a() {
 
 assert a()()() == 3
 
-asyncio.run(async lambda { print("Hello") }())
+if lambda {} {
+    asyncio.run(async lambda { print("Hello") }())
+}
