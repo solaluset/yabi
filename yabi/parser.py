@@ -59,9 +59,9 @@ def _make_arg(key):
 
 
 def _make_return(value):
-    arg = ast.Return(value)
-    arg.lineno = arg.col_offset = 0
-    return arg
+    ret = ast.Return(value)
+    ret.lineno = ret.col_offset = 0
+    return ret
 """
 LAMBDA_WRAPPER = """
 __all__.append("{name}")
