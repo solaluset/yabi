@@ -66,8 +66,9 @@ def _make_return(value):
 LAMBDA_WRAPPER = """
 __all__.append("{name}")
 {name}_tree = ast.parse({code})
-if isinstance({name}_tree.body[0].body[0].body[-1], ast.Expr):
-    {name}_tree.body[0].body[0].body[-1] = _make_return({name}_tree.body[0].body[0].body[-1].value)
+body = {name}_tree.body[0].body[0].body
+if isinstance(body[-1], ast.Expr):
+    body[-1] = _make_return(body[-1].value)
 def {name}():
     locals = _getframe().f_back.f_locals
     tree = {name}_tree
