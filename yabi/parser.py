@@ -246,7 +246,7 @@ def _is_op(token: str) -> bool:
     return get_token_type(token) == OP
 
 
-def _get_head_terminator(tokens: list[tokens], start: int, keywords: set) -> str | None:
+def _get_head_terminator(tokens: list[tokens], start: int, keywords: set, only_colon: bool = False) -> str | None:
     if tokens[start] not in keywords:
         return None
     tokens_range = range(start + 1, len(tokens))
@@ -281,7 +281,7 @@ def _get_head_terminator(tokens: list[tokens], start: int, keywords: set) -> str
                 return ":"
             if potential_block:
                 next_tok = next((tokens[j] for j in range(i + 1, len(tokens)) if not tokens[j].isspace()), None)
-                if not _is_op(next_tok):
+                if not (next_tok == ":" if only_colon else _is_op(next_tok)):
                     return "{"
                 return ":"
         if brace_stack == ["{"] and not _is_op(prev_tok):
@@ -403,7 +403,7 @@ def parse(tokens: Iterable[str]) -> tuple[Block, str]:
                 if head_term and all(b[1] for b in brace_stack):
                     result.append(Block())
                     in_head = True
-        terminator = _get_head_terminator(tokens, i, {"lambda"})
+        terminator = _get_head_terminator(tokens, i, {"lambda"}, True)
         if terminator == "{" or async_lambda:
             if tok.isspace():
                 i += 1
