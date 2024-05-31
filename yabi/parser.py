@@ -439,8 +439,8 @@ def parse(tokens: Iterable[str]) -> tuple[Block, str]:
         elif tok in BRACES.values():
             try:
                 brace, block_finished = brace_stack.pop()
-            except IndexError:
-                raise SyntaxError(f"unmatched '{tok}'")
+            except IndexError as e:
+                raise SyntaxError(f"unmatched '{tok}'") from e
             accept_keyword = block_finished
             if BRACES[brace] != tok:
                 raise SyntaxError(
