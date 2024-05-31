@@ -3,3 +3,4 @@ if ({a: b for a, b in enumerate(range(1))}) {
     if {1}:
         print("ok")
 }
+if {}: pass
