@@ -57,6 +57,8 @@ def test_match():
 @mark.skipif(sys.implementation.name == "pypy" and sys.version_info < (3, 10), reason="pypy's console is weird on older versions")
 def test_console():
     code = """
+from __future__ import annotations
+a: lol
 1; 2; 3
 for i in range(
     10
@@ -72,7 +74,7 @@ if True:
     with patch("sys.stdout", new=StringIO()), patch("sys.stdin", new=StringIO(code)):
         YabiConsole().interact()
         assert sys.stdout.getvalue() == """
->>> 1
+>>> >>> >>> 1
 2
 3
 >>> ... ... ... ... ... 1
