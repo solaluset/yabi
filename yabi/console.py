@@ -1,4 +1,5 @@
 import sys
+import ast
 from code import InteractiveConsole
 
 from pwcp.preprocessor import PyPreprocessor, PreprocessorError
@@ -11,8 +12,6 @@ class YabiConsole(InteractiveConsole):
     def __init__(self):
         super().__init__()
         self.preprocessor = PyPreprocessor(disabled=True)
-        # compile is an attribute, not a function
-        self.compile, self._compiler = self._compiler, self.compile
 
     def runsource(self, source, filename="<input>", symbol="single") -> bool:
         try:
@@ -29,16 +28,32 @@ class YabiConsole(InteractiveConsole):
             parsed = parsed.rstrip("\n")
         if module:
             sys.modules[module.__name__] = module
-        return super().runsource(parsed, filename, symbol)
+
+        try:
+            code = self._compiler(parsed, filename, symbol)
+        except (OverflowError, SyntaxError, ValueError):
+            self.showsyntaxerror(filename)
+            return False
+
+        if code is None:
+            return True
+
+        if symbol == "single":
+            tree = ast.parse(parsed, filename, "exec")
+            for node in tree.body:
+                self.runcode(self._compiler(ast.unparse(node) + "\n", filename, symbol))
+        else:
+            self.runcode(code)
+        return False
 
     def _compiler(self, source, filename, symbol):
         try:
-            return self._compiler(source, filename, symbol)
+            return self.compile(source, filename, symbol)
         except PreprocessorError:
             self.showtraceback()
-            return self._compiler("", filename, symbol)
+            return self.compile("", filename, symbol)
         except SyntaxError:
-            return self._compiler(source, filename, "exec")
+            return self.compile(source, filename, "exec")
 
 
 if __name__ == "__main__":
