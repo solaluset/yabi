@@ -41,7 +41,8 @@ class YabiConsole(InteractiveConsole):
         if symbol == "single":
             tree = ast.parse(parsed, filename, "exec")
             for node in tree.body:
-                self.runcode(self._compiler(ast.unparse(node) + "\n", filename, symbol))
+                code = self.compile.compiler(ast.Interactive([node]), filename, symbol)
+                self.runcode(code)
         else:
             self.runcode(code)
         return False
