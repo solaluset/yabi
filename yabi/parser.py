@@ -59,15 +59,16 @@ def _make_arg(key):
 
 
 def _make_return(value):
-    arg = ast.Return(value)
-    arg.lineno = arg.col_offset = 0
-    return arg
+    ret = ast.Return(value)
+    ret.lineno = ret.col_offset = 0
+    return ret
 """
 LAMBDA_WRAPPER = """
 __all__.append("{name}")
 {name}_tree = ast.parse({code})
-if isinstance({name}_tree.body[0].body[0].body[-1], ast.Expr):
-    {name}_tree.body[0].body[0].body[-1] = _make_return({name}_tree.body[0].body[0].body[-1].value)
+body = {name}_tree.body[0].body[0].body
+if isinstance(body[-1], ast.Expr):
+    body[-1] = _make_return(body[-1].value)
 def {name}():
     locals = _getframe().f_back.f_locals
     tree = {name}_tree
@@ -438,8 +439,8 @@ def parse(tokens: Iterable[str]) -> tuple[Block, str]:
         elif tok in BRACES.values():
             try:
                 brace, block_finished = brace_stack.pop()
-            except IndexError:
-                raise SyntaxError(f"unmatched '{tok}'")
+            except IndexError as e:
+                raise SyntaxError(f"unmatched '{tok}'") from e
             accept_keyword = block_finished
             if BRACES[brace] != tok:
                 raise SyntaxError(
