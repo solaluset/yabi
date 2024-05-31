@@ -10,12 +10,14 @@ def a() {
         for i in range(b) {
             x += i
         }
-        return lambda { x }
+        return lambda { x },
     }
 }
 
-assert a()(0)() == 3
+assert a()(0)[0]() == 3
 
 if lambda {} {
     asyncio.run(async lambda { print("Hello") }())
 }
+
+lambda a={}, b={}: a.update(b)
