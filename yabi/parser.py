@@ -41,6 +41,7 @@ UNCLOSED_BLOCK_ERROR = "there is an unclosed block"
 DIR_NAME = "_yabi_lambdas"
 LAMBDA_MODULE_HEAD = """
 __all__ = []
+
 import ast
 try:
     from sys import _getframe
@@ -62,20 +63,34 @@ def _make_return(value):
     ret = ast.Return(value)
     ret.lineno = ret.col_offset = 0
     return ret
+
+
+def _make_func(code, locals_):
+    tree = ast.parse(code)
+    body = tree.body[0].body[0].body
+    if isinstance(body[-1], ast.Expr):
+        body[-1] = _make_return(body[-1].value)
+    tree.body[0].args.args = [_make_arg(key) for key in locals_]
+    tree.body[0].args.kwarg = _make_arg(".")
+
+    ns = {}
+    exec(compile(tree, "<yabi-lambda>", "exec"), None, ns)
+    return ns["yabi_lambda_wrapper"]
 """
 LAMBDA_WRAPPER = """
 __all__.append("{name}")
-{name}_tree = ast.parse({code})
-body = {name}_tree.body[0].body[0].body
-if isinstance(body[-1], ast.Expr):
-    body[-1] = _make_return(body[-1].value)
+
+{name}_func = None
+
 def {name}():
-    locals = _getframe().f_back.f_locals
-    tree = {name}_tree
-    tree.body[0].args.args = [_make_arg(key) for key in locals]
-    ns = {{}}
-    exec(compile(tree, "<yabi-lambda>", "exec"), None, ns)
-    return ns["yabi_lambda_wrapper"](**locals)
+    global {name}_func
+
+    locals_ = _getframe().f_back.f_locals
+    if {name}_func is not None:
+        return {name}_func(**locals_)
+
+    {name}_func = _make_func({code}, locals_)
+    return {name}_func(**locals_)
 """
 
 
