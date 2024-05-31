@@ -42,10 +42,21 @@ class YabiConsole(InteractiveConsole):
             tree = ast.parse(parsed, filename, "exec")
             for node in tree.body:
                 code = self.compile.compiler(ast.Interactive([node]), filename, symbol)
-                self.runcode(code)
+                if not self.runcode(code):
+                    break
         else:
             self.runcode(code)
         return False
+
+    def runcode(self, code) -> bool:
+        try:
+            exec(code, self.locals)
+            return True
+        except SystemExit:
+            raise
+        except:
+            self.showtraceback()
+            return False
 
     def _compiler(self, source, filename, symbol):
         try:
