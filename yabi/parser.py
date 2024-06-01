@@ -271,7 +271,7 @@ def _get_head_terminator(tokens: list[tokens], start: int, keywords: set, only_c
         return None
     if first_token == ":":
         return ":"
-    if _is_op(first_token):
+    if first_token.endswith("="):
         return None
     brace_stack = []
     after_nl = False
