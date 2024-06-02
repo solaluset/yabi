@@ -11,10 +11,16 @@ from yabi import main, to_bython
 from yabi.console import YabiConsole
 
 
-def check_file(file, desired_output):
+def check_file(file, expexted_output):
     with patch("sys.stdout", new=StringIO()):
         main([file])
-        assert sys.stdout.getvalue() == desired_output
+        assert sys.stdout.getvalue() == expexted_output
+
+
+def check_console(code, expexted_output):
+    with patch("sys.stdout", new=StringIO()), patch("sys.stdin", new=StringIO(code)):
+        YabiConsole().interact()
+        assert sys.stdout.getvalue() == expexted_output
 
 
 def test_regular():
@@ -71,9 +77,7 @@ if True:
     print(2)
     print(3)
     """.strip() + "\n\n"
-    with patch("sys.stdout", new=StringIO()), patch("sys.stdin", new=StringIO(code)):
-        YabiConsole().interact()
-        assert sys.stdout.getvalue() == """
+    expexted_output = """
 >>> >>> >>> 1
 2
 3
@@ -87,6 +91,16 @@ if True:
 3
 >>>
         """.strip() + " "
+    check_console(code, expexted_output)
+
+
+def test_console_linecont():
+    code = """
+if \\
+  1: pass
+    """.strip() + "\n\n"
+    expexted_output = ">>> ... ... >>> "
+    check_console(code, expexted_output)
 
 
 def test_to_bython():
