@@ -368,7 +368,7 @@ def parse(tokens: Iterable[str]) -> tuple[Block, str]:
     async_lambda = False
     seen_lambdas = 0
     lambda_module_code = ""
-    tokens = list(tokens)
+    tokens = [tok for tok in tokens if tok]
     i = 0
     while i < len(tokens):
         tok = tokens[i]
