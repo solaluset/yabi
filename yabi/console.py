@@ -29,9 +29,8 @@ class YabiConsole(InteractiveConsole):
         if module:
             sys.modules[module.__name__] = module
 
-        is_multiline = "\n" in source
         try:
-            code = self._compiler(parsed, filename, symbol, is_multiline)
+            code = self._compiler(parsed, filename, symbol, source)
         except (OverflowError, SyntaxError, ValueError):
             self.showsyntaxerror(filename)
             return False
@@ -59,14 +58,16 @@ class YabiConsole(InteractiveConsole):
             self.showtraceback()
             return False
 
-    def _compiler(self, source, filename, symbol, is_multiline):
+    def _compiler(self, source, filename, symbol, original_source):
+        if original_source.endswith("\\"):
+            return None
         try:
             return self.compile(source, filename, symbol)
         except PreprocessorError:
             self.showtraceback()
             return self.compile("", filename, symbol)
         except SyntaxError:
-            if is_multiline and not source.endswith("\n"):
+            if "\n" in original_source and not source.endswith("\n"):
                 return None
             return self.compile(source, filename, "exec")
 
