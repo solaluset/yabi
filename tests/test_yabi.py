@@ -110,7 +110,7 @@ for i in {1, 2, 3}:
         print("Yes")
     else:
         print("No")
-    """.strip())[0] == """
+    """.strip()) == """
 for (i in {1, 2, 3}) {
     if i % 2 == 1 {
         print("Yes")

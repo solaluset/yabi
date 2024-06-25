@@ -500,7 +500,7 @@ def _insert_import(body: list[Block | str], import_: str):
             braces_seen -= 1
 
 
-def _transform(code: str, python: bool) -> tuple[str, ModuleType | None]:
+def _transform(code: str, python: bool) -> str:
     result, module_code = parse(expand_semicolons(tokenize(code + "\n")))
     if module_code:
         code_hash = md5(code.encode()).hexdigest()
@@ -518,12 +518,12 @@ def _transform(code: str, python: bool) -> tuple[str, ModuleType | None]:
             f.write(_code_to_hash_pyc(code, b"\0" * 8, False))
 
         _insert_import(result.body, f"from {fullname} import *\n")
-    return result.unparse(python), None
+    return result.unparse(python)
 
 
-def to_pure_python(code: str) -> tuple[str, ModuleType | None]:
+def to_pure_python(code: str) -> str:
     return _transform(code, True)
 
 
-def to_bython(code: str) -> tuple[str, ModuleType | None]:
+def to_bython(code: str) -> str:
     return _transform(code, False)
