@@ -2,7 +2,7 @@ from __future__ import annotations
 import os
 from io import StringIO
 from hashlib import md5
-from random import choices
+from random import Random
 from types import ModuleType
 from string import ascii_letters
 from typing import Generator, Iterable
@@ -311,8 +311,9 @@ def _get_head_terminator(tokens: list[tokens], start: int, keywords: set, only_c
     return "{" if potential_block else None
 
 
-def _gen_lambda_name() -> str:
-    return "_yabi_lambda_" + "".join(choices(ascii_letters, k=16))
+def _gen_lambda_name(seed) -> str:
+    random = Random(seed)
+    return "_yabi_lambda_" + "".join(random.choices(ascii_letters, k=16))
 
 
 def _parse_long_lambda(tokens: list[str], i: int, result: Block, lambda_module_code: str, async_lambda: bool, in_head: bool) -> tuple[int, str]:
@@ -342,7 +343,7 @@ def _parse_long_lambda(tokens: list[str], i: int, result: Block, lambda_module_c
     head = "".join(body.head).strip()
     if not head.startswith("(") or not head.endswith(")"):
         head = "(" + head + ")"
-    name = _gen_lambda_name()
+    name = _gen_lambda_name(hash(body.unparse()))
     if in_head:
         result.head_append(name + "()")
     else:
