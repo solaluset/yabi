@@ -3,7 +3,6 @@ import os
 from io import StringIO
 from hashlib import md5
 from random import Random
-from types import ModuleType
 from string import ascii_letters
 from typing import Generator, Iterable
 from tokenize import NAME, OP, generate_tokens
@@ -11,8 +10,6 @@ from importlib.machinery import SourceFileLoader
 from importlib._bootstrap_external import _code_to_hash_pyc
 
 from pypp.parser import default_lexer
-
-from . import config
 
 
 KEYWORDS = {
@@ -241,7 +238,11 @@ class Block:
             result = ""
         self.reindent(inner_indent)
         body = "".join(
-            child.unparse(pure_python, depth + 1) if isinstance(child, Block) else child
+            (
+                child.unparse(pure_python, depth + 1)
+                if isinstance(child, Block)
+                else child
+            )
             for child in self.body
         )
         if not pure_python:
@@ -263,12 +264,16 @@ def _is_op(token: str) -> bool:
     return get_token_type(token) == OP
 
 
-def _get_head_terminator(tokens: list[tokens], start: int, keywords: set, only_colon: bool = False) -> str | None:
+def _get_head_terminator(
+    tokens: list[str], start: int, keywords: set, only_colon: bool = False
+) -> str | None:
     if tokens[start] not in keywords:
         return None
     tokens_range = range(start + 1, len(tokens))
     try:
-        first_token = next(tokens[i] for i in tokens_range if not tokens[i].isspace())
+        first_token = next(
+            tokens[i] for i in tokens_range if not tokens[i].isspace()
+        )
     except StopIteration:
         return None
     if first_token == ":":
@@ -297,7 +302,14 @@ def _get_head_terminator(tokens: list[tokens], start: int, keywords: set, only_c
             if tok == ":":
                 return ":"
             if potential_block:
-                next_tok = next((tokens[j] for j in range(i + 1, len(tokens)) if not tokens[j].isspace()), None)
+                next_tok = next(
+                    (
+                        tokens[j]
+                        for j in range(i + 1, len(tokens))
+                        if not tokens[j].isspace()
+                    ),
+                    None,
+                )
                 if not (next_tok == ":" if only_colon else _is_op(next_tok)):
                     return "{"
                 return ":"
@@ -316,7 +328,14 @@ def _gen_lambda_name(seed) -> str:
     return "_yabi_lambda_" + "".join(random.choices(ascii_letters, k=16))
 
 
-def _parse_long_lambda(tokens: list[str], i: int, result: Block, lambda_module_code: str, async_lambda: bool, in_head: bool) -> tuple[int, str]:
+def _parse_long_lambda(
+    tokens: list[str],
+    i: int,
+    result: Block,
+    lambda_module_code: str,
+    async_lambda: bool,
+    in_head: bool,
+) -> tuple[int, str]:
     i += 1
     brace_stack = []
     body = Block()
@@ -348,10 +367,20 @@ def _parse_long_lambda(tokens: list[str], i: int, result: Block, lambda_module_c
         result.head_append(name + "()")
     else:
         result.append(name + "()")
-    body.head = list(tokenize(("async " if async_lambda else "") + "def _yabi_lambda" + head))
+    body.head = list(
+        tokenize(
+            ("async " if async_lambda else "") + "def _yabi_lambda" + head
+        )
+    )
     parsed_body, module_code = parse(body.body)
     body.body = parsed_body.body
-    code = f"def yabi_lambda_wrapper():\n" + body.unparse(depth=2) + "\n" + " " * INDENT_SIZE + "return _yabi_lambda\n"
+    code = (
+        "def yabi_lambda_wrapper():\n"
+        + body.unparse(depth=2)
+        + "\n"
+        + " " * INDENT_SIZE
+        + "return _yabi_lambda\n"
+    )
     code = LAMBDA_WRAPPER.format(name=name, code=repr(code))
     if not lambda_module_code:
         lambda_module_code = LAMBDA_MODULE_HEAD
@@ -409,7 +438,18 @@ def parse(tokens: Iterable[str]) -> tuple[Block, str]:
             if finish_on_nl:
                 finish_on_nl = False
                 result.finish()
-        elif tok == "async" and next((tokens[j] for j in range(i + 1, len(tokens)) if not tokens[j].isspace()), None) == "lambda":
+        elif (
+            tok == "async"
+            and next(
+                (
+                    tokens[j]
+                    for j in range(i + 1, len(tokens))
+                    if not tokens[j].isspace()
+                ),
+                None,
+            )
+            == "lambda"
+        ):
             async_lambda = True
             i += 1
             continue
@@ -417,7 +457,9 @@ def parse(tokens: Iterable[str]) -> tuple[Block, str]:
             if not tok.isspace():
                 accept_keyword = False
             if not in_head:
-                head_term = _get_head_terminator(tokens, i, KEYWORDS) or _get_head_terminator(tokens, i, SOFT_KEYWORDS)
+                head_term = _get_head_terminator(
+                    tokens, i, KEYWORDS
+                ) or _get_head_terminator(tokens, i, SOFT_KEYWORDS)
                 if head_term and all(b[1] for b in brace_stack):
                     result.append(Block())
                     in_head = True
@@ -428,7 +470,9 @@ def parse(tokens: Iterable[str]) -> tuple[Block, str]:
                 continue
             if terminator != "{":
                 raise SyntaxError("async lambda must use braces")
-            i, lambda_module_code = _parse_long_lambda(tokens, i, result, lambda_module_code, async_lambda, in_head)
+            i, lambda_module_code = _parse_long_lambda(
+                tokens, i, result, lambda_module_code, async_lambda, in_head
+            )
             async_lambda = False
             continue
         if in_head:

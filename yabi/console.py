@@ -20,7 +20,9 @@ class YabiConsole(InteractiveConsole):
             self.showtraceback()
             return False
         except SyntaxError as e:
-            if e.args[0] == UNCLOSED_BLOCK_ERROR or e.args[0].startswith("Unterminated"):
+            if e.args[0] == UNCLOSED_BLOCK_ERROR or e.args[0].startswith(
+                "Unterminated"
+            ):
                 return True
             self.showtraceback()
             return False
@@ -39,7 +41,9 @@ class YabiConsole(InteractiveConsole):
         if symbol == "single":
             tree = ast.parse(parsed, filename, "exec")
             for node in tree.body:
-                code = self.compile.compiler(ast.Interactive([node]), filename, symbol)
+                code = self.compile.compiler(
+                    ast.Interactive([node]), filename, symbol
+                )
                 if not self.runcode(code):
                     break
         else:
@@ -72,7 +76,7 @@ class YabiConsole(InteractiveConsole):
 
 if __name__ == "__main__":
     try:
-        import readline
+        import readline  # noqa: F401
     except ImportError:
         pass
     # use default handler instead of PWCP's one

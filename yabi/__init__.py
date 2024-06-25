@@ -12,7 +12,9 @@ from .parser import to_bython, to_pure_python
 
 def preproc(src, p=None):
     if p is None:
-        if not isinstance(src, TextIOBase) or src.name.endswith(config.EXTENSION):
+        if not isinstance(src, TextIOBase) or src.name.endswith(
+            config.EXTENSION
+        ):
             p = PyPreprocessor(disabled=True)
     res, deps = preprocess(src, p)
     if isinstance(src, TextIOBase):
