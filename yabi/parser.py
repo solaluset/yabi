@@ -7,6 +7,8 @@ from types import ModuleType
 from string import ascii_letters
 from typing import Generator, Iterable
 from tokenize import NAME, OP, generate_tokens
+from importlib.machinery import SourceFileLoader
+from importlib._bootstrap_external import _code_to_hash_pyc
 
 from pypp.parser import default_lexer
 
@@ -503,17 +505,20 @@ def _transform(code: str, python: bool) -> tuple[str, ModuleType | None]:
     if module_code:
         code_hash = md5(code.encode()).hexdigest()
         basename = "l_" + code_hash
-        module = ModuleType(DIR_NAME + "." + basename)
-        exec(module_code, vars(module))
-        if config.SAVE_FILES:
-            if not os.path.isdir(DIR_NAME):
-                os.mkdir(DIR_NAME)
-            with open(os.path.join(DIR_NAME, basename) + ".py", "w") as f:
-                f.write(module_code)
-        _insert_import(result.body, f"from {module.__name__} import *\n")
-    else:
-        module = None
-    return result.unparse(python), module
+        fullname = DIR_NAME + "." + basename
+        path = os.path.join(DIR_NAME, basename) + ".pyc"
+
+        loader = SourceFileLoader(fullname, path)
+        code = loader.source_to_code(module_code, path)
+
+        if not os.path.isdir(DIR_NAME):
+            os.mkdir(DIR_NAME)
+
+        with open(path, "wb") as f:
+            f.write(_code_to_hash_pyc(code, b"\0" * 8, False))
+
+        _insert_import(result.body, f"from {fullname} import *\n")
+    return result.unparse(python), None
 
 
 def to_pure_python(code: str) -> tuple[str, ModuleType | None]:
