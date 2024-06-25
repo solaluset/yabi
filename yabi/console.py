@@ -15,19 +15,19 @@ class YabiConsole(InteractiveConsole):
 
     def runsource(self, source, filename="<input>", symbol="single") -> bool:
         try:
-            parsed, module = to_pure_python(preproc(source, self.preprocessor))
+            parsed = to_pure_python(preproc(source, self.preprocessor)[0])
         except PreprocessorError:
             self.showtraceback()
             return False
         except SyntaxError as e:
-            if e.args[0] == UNCLOSED_BLOCK_ERROR or e.args[0].startswith("Unterminated"):
+            if e.args[0] == UNCLOSED_BLOCK_ERROR or e.args[0].startswith(
+                "Unterminated"
+            ):
                 return True
             self.showtraceback()
             return False
         if not source.endswith("\n"):
             parsed = parsed.rstrip("\n")
-        if module:
-            sys.modules[module.__name__] = module
 
         try:
             code = self._compiler(parsed, filename, symbol, source)
@@ -41,7 +41,9 @@ class YabiConsole(InteractiveConsole):
         if symbol == "single":
             tree = ast.parse(parsed, filename, "exec")
             for node in tree.body:
-                code = self.compile.compiler(ast.Interactive([node]), filename, symbol)
+                code = self.compile.compiler(
+                    ast.Interactive([node]), filename, symbol
+                )
                 if not self.runcode(code):
                     break
         else:
@@ -74,7 +76,7 @@ class YabiConsole(InteractiveConsole):
 
 if __name__ == "__main__":
     try:
-        import readline
+        import readline  # noqa: F401
     except ImportError:
         pass
     # use default handler instead of PWCP's one

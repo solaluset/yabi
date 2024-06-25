@@ -12,14 +12,14 @@ from .parser import to_bython, to_pure_python
 
 def preproc(src, p=None):
     if p is None:
-        if not isinstance(src, TextIOBase) or src.name.endswith(config.EXTENSION):
+        if not isinstance(src, TextIOBase) or src.name.endswith(
+            config.EXTENSION
+        ):
             p = PyPreprocessor(disabled=True)
-    res = preprocess(src, p)
+    res, deps = preprocess(src, p)
     if isinstance(src, TextIOBase):
-        res, module = to_pure_python(res)
-        if module:
-            sys.modules[module.__name__] = module
-    return res
+        res = to_pure_python(res)
+    return res, deps
 
 
 def main(args=sys.argv[1:]):

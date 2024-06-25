@@ -18,7 +18,9 @@ def check_file(file, expexted_output):
 
 
 def check_console(code, expexted_output):
-    with patch("sys.stdout", new=StringIO()), patch("sys.stdin", new=StringIO(code)):
+    with patch("sys.stdout", new=StringIO()), patch(
+        "sys.stdin", new=StringIO(code)
+    ):
         YabiConsole().interact()
         assert sys.stdout.getvalue() == expexted_output
 
@@ -36,7 +38,9 @@ def test_dict():
 
 
 def test_except():
-    check_file("tests/except.by", "e\ndivision by zero\ne\ne\ndivision by zero\n")
+    check_file(
+        "tests/except.by", "e\ndivision by zero\ne\ne\ndivision by zero\n"
+    )
 
 
 def test_inline_if():
@@ -55,14 +59,20 @@ def test_lambda():
     check_file("tests/lambda.by", "Hello\n")
 
 
-@mark.skipif(sys.version_info < (3, 10), reason="requires python3.10 or higher")
+@mark.skipif(
+    sys.version_info < (3, 10), reason="requires python3.10 or higher"
+)
 def test_match():
     check_file("tests/match.by", "1\n2\n")
 
 
-@mark.skipif(sys.implementation.name == "pypy" and sys.version_info < (3, 10), reason="pypy's console is weird on older versions")
+@mark.skipif(
+    sys.implementation.name == "pypy" and sys.version_info < (3, 10),
+    reason="pypy's console is weird on older versions",
+)
 def test_console():
-    code = """
+    code = (
+        """
 from __future__ import annotations
 a: lol
 1; 2; 3
@@ -76,8 +86,11 @@ if True:
     print(1)
     print(2)
     print(3)
-    """.strip() + "\n\n"
-    expexted_output = """
+    """.strip()
+        + "\n\n"
+    )
+    expexted_output = (
+        """
 >>> >>> >>> 1
 2
 3
@@ -90,27 +103,36 @@ if True:
 2
 3
 >>>
-        """.strip() + " "
+        """.strip()
+        + " "
+    )
     check_console(code, expexted_output)
 
 
 def test_console_linecont():
-    code = """
+    code = (
+        """
 if \\
   1: pass
-    """.strip() + "\n\n"
+    """.strip()
+        + "\n\n"
+    )
     expexted_output = ">>> ... ... >>> "
     check_console(code, expexted_output)
 
 
 def test_to_bython():
-    assert to_bython("""
+    assert (
+        to_bython(
+            """
 for i in {1, 2, 3}:
     if i % 2 == 1:
         print("Yes")
     else:
         print("No")
-    """.strip())[0] == """
+    """.strip()
+        )
+        == """
 for (i in {1, 2, 3}) {
     if i % 2 == 1 {
         print("Yes")
@@ -119,4 +141,6 @@ for (i in {1, 2, 3}) {
         print("No")
     }
 }
-    """.strip() + "\n"
+    """.strip()
+        + "\n"
+    )
