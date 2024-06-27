@@ -3,7 +3,7 @@ requires = ["setuptools", "wheel"]
 
 [project]
 name = "yabi"
-version = "0.3.1"
+version = "0.3.2"
 description = "Yet Another Bython (braced Python) Implementation"
 dependencies = ["pwcp@git+https://github.com/solaluset/pwcp.git@1b72a3da0c86a1b91f5ce9d5418fc5f0486fc650"]
 optional-dependencies = {tests = ["pytest"]}
