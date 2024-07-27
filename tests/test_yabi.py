@@ -11,6 +11,9 @@ from yabi import main, to_bython
 from yabi.console import YabiConsole
 
 
+sys.dont_write_bytecode = True
+
+
 def check_file(file, expexted_output):
     with patch("sys.stdout", new=StringIO()):
         main([file])
