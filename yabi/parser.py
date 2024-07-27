@@ -1,5 +1,6 @@
 from __future__ import annotations
 import os
+import sys
 from io import StringIO
 from hashlib import md5
 from random import Random
@@ -37,7 +38,8 @@ BRACES = {
 }
 INDENT_SIZE = 4
 UNCLOSED_BLOCK_ERROR = "there is an unclosed block"
-DIR_NAME = "_yabi_lambdas"
+LAMBDAS_DIR = os.path.abspath(os.getenv("YABI_LAMBDAS_DIR", "_yabi_lambdas"))
+sys.path.append(LAMBDAS_DIR)
 LAMBDA_MODULE_HEAD = """
 __all__ = []
 
@@ -549,20 +551,19 @@ def _transform(code: str, python: bool) -> str:
     result, module_code = parse(expand_semicolons(tokenize(code + "\n")))
     if module_code:
         code_hash = md5(code.encode()).hexdigest()
-        basename = "l_" + code_hash
-        fullname = DIR_NAME + "." + basename
-        path = os.path.join(DIR_NAME, basename) + ".pyc"
+        module_name = "yl_" + code_hash
+        path = os.path.join(LAMBDAS_DIR, module_name + ".pyc")
 
-        loader = SourceFileLoader(fullname, path)
+        loader = SourceFileLoader(module_name, path)
         code = loader.source_to_code(module_code, path)
 
-        if not os.path.isdir(DIR_NAME):
-            os.mkdir(DIR_NAME)
+        if not os.path.isdir(LAMBDAS_DIR):
+            os.mkdir(LAMBDAS_DIR)
 
         with open(path, "wb") as f:
             f.write(_code_to_hash_pyc(code, b"\0" * 8, False))
 
-        _insert_import(result.body, f"from {fullname} import *\n")
+        _insert_import(result.body, f"from {module_name} import *\n")
     return result.unparse(python)
 
 
