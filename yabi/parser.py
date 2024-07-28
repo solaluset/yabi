@@ -86,12 +86,13 @@ __all__.append("{name}")
 def {name}():
     global {name}_func
 
-    locals_ = _getframe().f_back.f_locals
+    frame = _getframe().f_back
+    variables = {{**frame.f_globals, **frame.f_locals}}
     if {name}_func is not None:
-        return {name}_func(**locals_)
+        return {name}_func(**variables)
 
-    {name}_func = _make_func({code}, locals_)
-    return {name}_func(**locals_)
+    {name}_func = _make_func({code}, variables)
+    return {name}_func(**variables)
 """
 
 
