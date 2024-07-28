@@ -3,10 +3,10 @@ requires = ["setuptools", "wheel"]
 
 [project]
 name = "yabi"
-version = "0.4.1"
+version = "0.4.2"
 description = "Yet Another Bython (braced Python) Implementation"
 readme = "README.md"
-dependencies = ["pwcp@git+https://github.com/solaluset/pwcp.git@8a011d77ffff2dc744ee3ea035ea78bf4ddb18ce"]
+dependencies = ["pwcp==0.8.1"]
 optional-dependencies = {tests = ["pytest"]}
 scripts = {yabi = "yabi:main", yabi-convert = "yabi:convert_main"}
 
