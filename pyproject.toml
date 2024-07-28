@@ -2,8 +2,8 @@
 requires = ["setuptools", "wheel"]
 
 [project]
-name = "yabi"
-version = "0.4.2"
+name = "yabi-bython"
+version = "0.4.3"
 description = "Yet Another Bython (braced Python) Implementation"
 readme = "README.md"
 dependencies = ["pwcp==0.8.1"]
