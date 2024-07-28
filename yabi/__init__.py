@@ -17,9 +17,7 @@ def preproc(src, p=None):
         ):
             p = PyPreprocessor(disabled=True)
     res, deps = preprocess(src, p)
-    if isinstance(src, TextIOBase):
-        res = to_pure_python(res)
-    return res, deps
+    return to_pure_python(res), deps
 
 
 def main(args=sys.argv[1:]):
