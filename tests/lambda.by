@@ -16,8 +16,25 @@ def a() {
 
 assert a()(0)[0]() == 3
 
+def b() {
+    c = 0
+    lambda {
+        nonlocal c
+        c += 1
+    }()
+    return c
+}
+
+assert b() == 1
+
+li = [2, 1, 3]
+li.sort(key=lambda x { -x })
+assert li == [3, 2, 1]
+
 if lambda {} {
-    asyncio.run(async lambda { print("Hello") }())
+    asyncio.run(
+        async lambda { print("Hello") }()
+    )
 }
 
 lambda a={}, b={}: a.update(b)
