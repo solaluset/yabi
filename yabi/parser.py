@@ -126,7 +126,7 @@ class Block:
                     i -= 1
                     if self.body[i] == brace_stack[-1]:
                         brace_stack.pop()
-            while self.body[i] != "\n":
+            while i > 0 and self.body[i] != "\n":
                 i -= 1
             self.body.insert(i, part)
             self.body.insert(i, "\n")
