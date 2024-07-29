@@ -1,7 +1,7 @@
 from __future__ import annotations
 import ast
+import random
 from io import StringIO
-from random import Random
 from string import ascii_letters
 from typing import Generator, Iterable
 from tokenize import NAME, OP, generate_tokens
@@ -298,8 +298,7 @@ def _add_return(code: str) -> str:
     return "\n".join(code)
 
 
-def _gen_lambda_name(seed) -> str:
-    random = Random(seed)
+def _gen_lambda_name() -> str:
     return "_yabi_lambda_" + "".join(random.choices(ascii_letters, k=16))
 
 
@@ -336,7 +335,7 @@ def _parse_long_lambda(
     head = "".join(body.head).strip()
     if not head.startswith("(") or not head.endswith(")"):
         head = "(" + head + ")"
-    name = _gen_lambda_name(hash(body.unparse()))
+    name = _gen_lambda_name()
     if in_head:
         result.head_append(name)
     else:
