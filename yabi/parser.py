@@ -381,19 +381,20 @@ def parse(tokens: Iterable[str]) -> tuple[Block, str]:
                 capture_indent = True
         if after_nl:
             after_nl = False
-            accept_keyword = True
-            if tok not in {"\n", "#"}:
-                indent = tok if tok.isspace() else ""
-                while indent_stack[-1] is not None and not indent.startswith(
-                    indent_stack[-1]
-                ):
-                    result.append(indent_stack.pop())
-                    result.finish()
-                if capture_indent:
-                    capture_indent = False
-                    after_indent = True
-                    if indent:
-                        indent_stack.append(indent)
+            if all(b[1] for b in brace_stack):
+                accept_keyword = True
+                if tok not in {"\n", "#"}:
+                    indent = tok if tok.isspace() else ""
+                    while indent_stack[-1] is not None and not indent.startswith(
+                        indent_stack[-1]
+                    ):
+                        result.append(indent_stack.pop())
+                        result.finish()
+                    if capture_indent:
+                        capture_indent = False
+                        after_indent = True
+                        if indent:
+                            indent_stack.append(indent)
         if tok == "\n":
             after_nl = True
             if finish_on_nl:
