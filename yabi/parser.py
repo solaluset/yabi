@@ -341,9 +341,7 @@ def _parse_long_lambda(
     else:
         result.append(name)
     body.head = list(
-        tokenize(
-            ("async " if async_lambda else "") + "def " + name + head
-        )
+        tokenize(("async " if async_lambda else "") + "def " + name + head)
     )
     code = body.unparse(depth=1)
     code = _add_return(code)
@@ -385,9 +383,9 @@ def parse(tokens: Iterable[str]) -> tuple[Block, str]:
                 accept_keyword = True
                 if tok not in {"\n", "#"}:
                     indent = tok if tok.isspace() else ""
-                    while indent_stack[-1] is not None and not indent.startswith(
-                        indent_stack[-1]
-                    ):
+                    while indent_stack[
+                        -1
+                    ] is not None and not indent.startswith(indent_stack[-1]):
                         result.append(indent_stack.pop())
                         result.finish()
                     if capture_indent:
