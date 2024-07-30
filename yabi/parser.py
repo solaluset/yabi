@@ -1,14 +1,10 @@
 from __future__ import annotations
-import os
-import sys
+import ast
+import random
 from io import StringIO
-from hashlib import md5
-from random import Random
 from string import ascii_letters
 from typing import Generator, Iterable
 from tokenize import NAME, OP, generate_tokens
-from importlib.machinery import SourceFileLoader
-from importlib._bootstrap_external import _code_to_hash_pyc
 
 from pypp.parser import default_lexer
 
@@ -38,62 +34,6 @@ BRACES = {
 }
 INDENT_SIZE = 4
 UNCLOSED_BLOCK_ERROR = "there is an unclosed block"
-LAMBDAS_DIR = os.path.abspath(os.getenv("YABI_LAMBDAS_DIR", "_yabi_lambdas"))
-sys.path.append(LAMBDAS_DIR)
-LAMBDA_MODULE_HEAD = """
-__all__ = []
-
-import ast
-try:
-    from sys import _getframe
-except ImportError:
-    def _getframe():
-        try:
-            raise Exception
-        except Exception as e:
-            return e.__traceback__.tb_frame.f_back
-
-
-def _make_arg(key):
-    arg = ast.arg(key)
-    arg.lineno = arg.col_offset = 0
-    return arg
-
-
-def _make_return(value):
-    ret = ast.Return(value)
-    ret.lineno = ret.col_offset = 0
-    return ret
-
-
-def _make_func(code, locals_):
-    tree = ast.parse(code)
-    body = tree.body[0].body[0].body
-    if isinstance(body[-1], ast.Expr):
-        body[-1] = _make_return(body[-1].value)
-    tree.body[0].args.args = [_make_arg(key) for key in locals_]
-    tree.body[0].args.kwarg = _make_arg(".")
-
-    ns = {}
-    exec(compile(tree, "<yabi-lambda>", "exec"), None, ns)
-    return ns["yabi_lambda_wrapper"]
-"""
-LAMBDA_WRAPPER = """
-__all__.append("{name}")
-
-{name}_func = None
-
-def {name}():
-    global {name}_func
-
-    frame = _getframe().f_back
-    variables = {{**frame.f_globals, **frame.f_locals}}
-    if {name}_func is not None:
-        return {name}_func(**variables)
-
-    {name}_func = _make_func({code}, variables)
-    return {name}_func(**variables)
-"""
 
 
 def tokenize(text: str) -> Generator[str, None, None]:
@@ -170,6 +110,26 @@ class Block:
             self.body[-1].head_append(part)
         else:
             self.head.append(part)
+
+    def insert_lambda(self, part: str | Block, brace_stack):
+        if self._child_unfinished():
+            if not self.body[-1].body:
+                self.body.insert(-1, part)
+            else:
+                self.body[-1].insert_lambda(part, brace_stack)
+        else:
+            i = len(self.body)
+            if not brace_stack:
+                i -= 1
+            else:
+                while brace_stack:
+                    i -= 1
+                    if self.body[i] == brace_stack[-1]:
+                        brace_stack.pop()
+            while i > 0 and self.body[i] != "\n":
+                i -= 1
+            self.body.insert(i, part)
+            self.body.insert(i, "\n")
 
     def finish(self):
         if self._child_unfinished():
@@ -326,8 +286,19 @@ def _get_head_terminator(
     return "{" if potential_block else None
 
 
-def _gen_lambda_name(seed) -> str:
-    random = Random(seed)
+def _add_return(code: str) -> str:
+    tree = ast.parse(code)
+    last_node = tree.body[0].body[-1]
+    if not isinstance(last_node, ast.Expr):
+        return code
+    code = code.splitlines()
+    line = list(code[last_node.lineno - 1])
+    line.insert(last_node.col_offset, "return ")
+    code[last_node.lineno - 1] = "".join(line)
+    return "\n".join(code)
+
+
+def _gen_lambda_name() -> str:
     return "_yabi_lambda_" + "".join(random.choices(ascii_letters, k=16))
 
 
@@ -335,7 +306,6 @@ def _parse_long_lambda(
     tokens: list[str],
     i: int,
     result: Block,
-    lambda_module_code: str,
     async_lambda: bool,
     in_head: bool,
 ) -> tuple[int, str]:
@@ -365,31 +335,18 @@ def _parse_long_lambda(
     head = "".join(body.head).strip()
     if not head.startswith("(") or not head.endswith(")"):
         head = "(" + head + ")"
-    name = _gen_lambda_name(hash(body.unparse()))
+    name = _gen_lambda_name()
     if in_head:
-        result.head_append(name + "()")
+        result.head_append(name)
     else:
-        result.append(name + "()")
+        result.append(name)
     body.head = list(
-        tokenize(
-            ("async " if async_lambda else "") + "def _yabi_lambda" + head
-        )
+        tokenize(("async " if async_lambda else "") + "def " + name + head)
     )
-    parsed_body, module_code = parse(body.body)
-    body.body = parsed_body.body
-    code = (
-        "def yabi_lambda_wrapper():\n"
-        + body.unparse(depth=2)
-        + "\n"
-        + " " * INDENT_SIZE
-        + "return _yabi_lambda\n"
-    )
-    code = LAMBDA_WRAPPER.format(name=name, code=repr(code))
-    if not lambda_module_code:
-        lambda_module_code = LAMBDA_MODULE_HEAD
-    lambda_module_code += code
-    lambda_module_code += module_code.replace(LAMBDA_MODULE_HEAD, "")
-    return i + 1, lambda_module_code
+    code = body.unparse(depth=1)
+    code = _add_return(code)
+    body = parse(tokenize(code)).body[0]
+    return i + 1, body
 
 
 def parse(tokens: Iterable[str]) -> tuple[Block, str]:
@@ -402,7 +359,6 @@ def parse(tokens: Iterable[str]) -> tuple[Block, str]:
     accept_keyword = False
     async_lambda = False
     seen_lambdas = 0
-    lambda_module_code = ""
     tokens = [tok for tok in tokens if tok]
     i = 0
     while i < len(tokens):
@@ -423,19 +379,20 @@ def parse(tokens: Iterable[str]) -> tuple[Block, str]:
                 capture_indent = True
         if after_nl:
             after_nl = False
-            accept_keyword = True
-            if tok not in {"\n", "#"}:
-                indent = tok if tok.isspace() else ""
-                while indent_stack[-1] is not None and not indent.startswith(
-                    indent_stack[-1]
-                ):
-                    result.append(indent_stack.pop())
-                    result.finish()
-                if capture_indent:
-                    capture_indent = False
-                    after_indent = True
-                    if indent:
-                        indent_stack.append(indent)
+            if all(b[1] for b in brace_stack):
+                accept_keyword = True
+                if tok not in {"\n", "#"}:
+                    indent = tok if tok.isspace() else ""
+                    while indent_stack[
+                        -1
+                    ] is not None and not indent.startswith(indent_stack[-1]):
+                        result.append(indent_stack.pop())
+                        result.finish()
+                    if capture_indent:
+                        capture_indent = False
+                        after_indent = True
+                        if indent:
+                            indent_stack.append(indent)
         if tok == "\n":
             after_nl = True
             if finish_on_nl:
@@ -473,9 +430,16 @@ def parse(tokens: Iterable[str]) -> tuple[Block, str]:
                 continue
             if terminator != "{":
                 raise SyntaxError("async lambda must use braces")
-            i, lambda_module_code = _parse_long_lambda(
-                tokens, i, result, lambda_module_code, async_lambda, in_head
+            i, lambda_body = _parse_long_lambda(
+                tokens, i, result, async_lambda, in_head
             )
+            brace_stack_copy = []
+            for brace, is_block in reversed(brace_stack):
+                if is_block:
+                    break
+                brace_stack_copy.append(brace)
+            brace_stack_copy.reverse()
+            result.insert_lambda(lambda_body, brace_stack_copy)
             async_lambda = False
             continue
         if in_head:
@@ -526,45 +490,11 @@ def parse(tokens: Iterable[str]) -> tuple[Block, str]:
         result.finish()
     if not result.finished:
         raise SyntaxError(UNCLOSED_BLOCK_ERROR)
-    return result, lambda_module_code
-
-
-def _insert_import(body: list[Block | str], import_: str):
-    after_nl = True
-    braces_seen = 0
-    for i, tok in enumerate(body):
-        if tok == "\n":
-            after_nl = True
-        if isinstance(tok, str) and tok.isspace():
-            continue
-        if after_nl:
-            after_nl = False
-            if not braces_seen and tok not in {"#", "import", "from"}:
-                body.insert(i, import_)
-                break
-        if tok in BRACES:
-            braces_seen += 1
-        elif tok in BRACES.values():
-            braces_seen -= 1
+    return result
 
 
 def _transform(code: str, python: bool) -> str:
-    result, module_code = parse(expand_semicolons(tokenize(code + "\n")))
-    if module_code:
-        code_hash = md5(code.encode()).hexdigest()
-        module_name = "yl_" + code_hash
-        path = os.path.join(LAMBDAS_DIR, module_name + ".pyc")
-
-        loader = SourceFileLoader(module_name, path)
-        code = loader.source_to_code(module_code, path)
-
-        if not os.path.isdir(LAMBDAS_DIR):
-            os.mkdir(LAMBDAS_DIR)
-
-        with open(path, "wb") as f:
-            f.write(_code_to_hash_pyc(code, b"\0" * 8, False))
-
-        _insert_import(result.body, f"from {module_name} import *\n")
+    result = parse(expand_semicolons(tokenize(code + "\n")))
     return result.unparse(python)
 
 
