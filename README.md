@@ -2,6 +2,12 @@
 
 Ever wanted to use braces instead of indentation in Python? No? Well, it's possible now!
 
+## Installing
+
+```bash
+pip install yabi-bython
+```
+
 ## Is YABI better than other implementations?
 
 - Doesn't have problems with dicts
