@@ -11,7 +11,7 @@ from . import config
 from .parser import to_pure_python
 
 
-__version__ = metadata.version(__package__)
+__version__ = metadata.version("yabi-bython")
 
 parser = argparse.ArgumentParser(
     (
