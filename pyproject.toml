@@ -6,7 +6,7 @@ name = "yabi-bython"
 version = "0.5.0"
 description = "Yet Another Bython (braced Python) Implementation"
 readme = "README.md"
-dependencies = ["pwcp==0.9.0"]
+dependencies = ["pwcp>=0.9.0"]
 optional-dependencies = {tests = ["pytest"]}
 scripts = {yabi = "yabi:main", yabi-convert = "yabi:convert_main"}
 
