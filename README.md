@@ -8,6 +8,19 @@ Ever wanted to use braces instead of indentation in Python? No? Well, it's possi
 pip install yabi-bython
 ```
 
+## Running
+
+```bash
+# run file
+yabi file.by
+# run module
+yabi -m module
+# run interactive console
+yabi
+```
+
+Run `yabi --help` to see other options.
+
 ## Is YABI better than other implementations?
 
 - Doesn't have problems with dicts
