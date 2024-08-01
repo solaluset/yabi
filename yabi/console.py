@@ -4,7 +4,7 @@ from code import InteractiveConsole
 
 from pwcp.preprocessor import PyPreprocessor, PreprocessorError
 
-from . import preproc
+from .runner import preproc
 from .parser import UNCLOSED_BLOCK_ERROR, to_pure_python
 
 
