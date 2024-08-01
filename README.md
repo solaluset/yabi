@@ -4,7 +4,10 @@ Ever wanted to use braces instead of indentation in Python? No? Well, it's possi
 
 ## Is YABI better than other implementations?
 
-It doesn't have problems with dicts.
+- Doesn't have problems with dicts
+- Has full `import` support (any `.by` file can be imported)
+- Has `.pyc` support (code is cached after translation)
+
 It can have bugs though, I'd be glad if you opened an issue in case you encounter one.
 
 If your condition contains `{` or `lambda`, remember to parenthesise it:
