@@ -293,7 +293,8 @@ def _add_return(code: str) -> str:
         return code
     code = code.splitlines()
     line = list(code[last_node.lineno - 1])
-    line.insert(last_node.col_offset, "return ")
+    line.insert(last_node.col_offset, "return (")
+    line.insert(last_node.end_col_offset + 1, ")")
     code[last_node.lineno - 1] = "".join(line)
     return "\n".join(code)
 
