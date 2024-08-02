@@ -2,6 +2,7 @@ from __future__ import annotations
 import ast
 import random
 from io import StringIO
+from builtins import compile
 from string import ascii_letters
 from typing import Generator, Iterable
 from tokenize import NAME, OP, generate_tokens
@@ -287,13 +288,15 @@ def _get_head_terminator(
 
 
 def _add_return(code: str) -> str:
-    tree = ast.parse(code)
+    # same as `ast.parse`, but with non-overriden compile
+    tree = compile(code, "<string>", "exec", ast.PyCF_ONLY_AST)
     last_node = tree.body[0].body[-1]
     if not isinstance(last_node, ast.Expr):
         return code
     code = code.splitlines()
     line = list(code[last_node.lineno - 1])
-    line.insert(last_node.col_offset, "return ")
+    line.insert(last_node.col_offset, "return (")
+    line.insert(last_node.end_col_offset + 1, ")")
     code[last_node.lineno - 1] = "".join(line)
     return "\n".join(code)
 
@@ -343,8 +346,11 @@ def _parse_long_lambda(
     body.head = list(
         tokenize(("async " if async_lambda else "") + "def " + name + head)
     )
+    # reparse because inner Bython code was not processed
     code = body.unparse(depth=1)
-    code = _add_return(code)
+    body = parse(tokenize(code)).body[0]
+    # reparse again because we need to add return
+    code = _add_return(body.unparse(depth=1))
     body = parse(tokenize(code)).body[0]
     return i + 1, body
 
