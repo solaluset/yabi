@@ -346,8 +346,11 @@ def _parse_long_lambda(
     body.head = list(
         tokenize(("async " if async_lambda else "") + "def " + name + head)
     )
+    # reparse because inner Bython code was not processed
     code = body.unparse(depth=1)
-    code = _add_return(code)
+    body = parse(tokenize(code)).body[0]
+    # reparse again because we need to add return
+    code = _add_return(body.unparse(depth=1))
     body = parse(tokenize(code)).body[0]
     return i + 1, body
 
