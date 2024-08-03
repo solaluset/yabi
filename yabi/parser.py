@@ -305,202 +305,249 @@ def _gen_lambda_name() -> str:
     return "_yabi_lambda_" + "".join(random.choices(ascii_letters, k=16))
 
 
-def _parse_long_lambda(
-    tokens: list[str],
-    i: int,
-    result: Block,
-    async_lambda: bool,
-    in_head: bool,
-) -> tuple[int, str]:
-    i += 1
-    brace_stack = []
-    body = Block()
-    in_body = False
-    while i < len(tokens):
-        tok = tokens[i]
-        if tok in BRACES:
-            brace_stack.append(tok)
-        elif tok in BRACES.values():
-            brace_stack.pop()
-        if not in_body and brace_stack == ["{"]:
-            in_body = True
-            i += 1
-            continue
-        if in_body:
-            if not brace_stack:
-                break
-            body.append(tok)
-        else:
-            body.head_append(tok)
-        i += 1
-    if brace_stack:
-        raise SyntaxError(UNCLOSED_BLOCK_ERROR)
-    head = "".join(body.head).strip()
-    if not head.startswith("(") or not head.endswith(")"):
-        head = "(" + head + ")"
-    name = _gen_lambda_name()
-    if in_head:
-        result.head_append(name)
-    else:
-        result.append(name)
-    body.head = list(
-        tokenize(("async " if async_lambda else "") + "def " + name + head)
-    )
-    # reparse because inner Bython code was not processed
-    code = body.unparse(depth=1)
-    body = parse(tokenize(code)).body[0]
-    # reparse again because we need to add return
-    code = _add_return(body.unparse(depth=1))
-    body = parse(tokenize(code)).body[0]
-    return i + 1, body
+class Parser:
+    NEWLINE_OR_COMMENT = {"\n", "#"}
 
+    def __init__(self, tokens: Iterable[str]):
+        self.brace_stack = []
+        self.indent_stack = [""]
+        self.result = None
+        self.in_head = False
+        self.after_colon = False
+        self.finish_on_nl = False
+        self.capture_indent = False
+        self.after_indent = False
+        self.after_nl = True
+        self.accept_keyword = False
+        self.async_lambda = False
+        self.seen_lambdas = 0
+        self.block_started = False
+        self.skip = False
+        self.next_indent = None
+        self.head_term = None
+        self.tokens = [tok for tok in tokens if tok]
+        self.i = 0
 
-def parse(tokens: Iterable[str]) -> tuple[Block, str]:
-    brace_stack = []
-    indent_stack = [""]
-    result = Block()
-    in_head = after_colon = finish_on_nl = False
-    capture_indent = after_indent = False
-    after_nl = True
-    accept_keyword = False
-    async_lambda = False
-    seen_lambdas = 0
-    tokens = [tok for tok in tokens if tok]
-    i = 0
-    while i < len(tokens):
-        tok = tokens[i]
-        block_started = False
-        if after_colon:
-            if tok in {"\n", "#"}:
-                after_colon = False
-                capture_indent = True
-            elif not tok.isspace():
-                after_colon = False
-                finish_on_nl = True
-        if after_indent:
-            after_indent = False
-            if tok in {"\n", "#"}:
-                if len(indent_stack) > 1:
-                    indent_stack.pop()
-                capture_indent = True
-        if after_nl:
-            after_nl = False
-            if all(b[1] for b in brace_stack):
-                accept_keyword = True
-                if tok not in {"\n", "#"}:
-                    indent = tok if tok.isspace() else ""
-                    while indent_stack[
-                        -1
-                    ] is not None and not indent.startswith(indent_stack[-1]):
-                        result.append(indent_stack.pop())
-                        result.finish()
-                    if capture_indent:
-                        capture_indent = False
-                        after_indent = True
-                        if indent:
-                            indent_stack.append(indent)
-        if tok == "\n":
-            after_nl = True
-            if finish_on_nl:
-                finish_on_nl = False
-                result.finish()
-        elif (
-            tok == "async"
-            and next(
-                (
-                    tokens[j]
-                    for j in range(i + 1, len(tokens))
-                    if not tokens[j].isspace()
-                ),
-                None,
-            )
-            == "lambda"
-        ):
-            async_lambda = True
-            i += 1
-            continue
-        elif accept_keyword:
-            if not tok.isspace():
-                accept_keyword = False
-            if not in_head:
-                head_term = _get_head_terminator(
-                    tokens, i, KEYWORDS
-                ) or _get_head_terminator(tokens, i, SOFT_KEYWORDS)
-                if head_term and all(b[1] for b in brace_stack):
-                    result.append(Block())
-                    in_head = True
-        terminator = _get_head_terminator(tokens, i, {"lambda"}, True)
-        if terminator == "{" or async_lambda:
-            if tok.isspace():
-                i += 1
+    def parse(self):
+        if self.result is not None:
+            return self.result
+        self.result = Block()
+        self._parse()
+        return self.result
+
+    def _parse(self):
+        while self.i < len(self.tokens):
+            tok = self.tokens[self.i]
+            self.block_started = False
+            if self.after_colon:
+                self._parse_after_colon(tok)
+            elif self.after_indent:
+                self._parse_after_indent(tok)
+            elif self.after_nl:
+                self._parse_after_nl(tok)
+            if tok == "\n":
+                self.after_nl = True
+                if self.finish_on_nl:
+                    self.finish_on_nl = False
+                    self.result.finish()
+            elif tok == "async" and self._next_nonspace(self.i) == "lambda":
+                self.async_lambda = True
+                self.i += 1
                 continue
+            elif self.accept_keyword:
+                self._parse_accept_keyword(tok)
+            if self._parse_long_lambda(tok):
+                continue
+            if self.in_head:
+                self._parse_in_head(tok)
+
+            self.skip = self.in_head or self.block_started
+
+            if tok in BRACES:
+                self._parse_tok_in_braces(tok)
+            elif tok in BRACES.values():
+                self._parse_tok_in_braces_values(tok)
+
+            if not self.skip:
+                self.result.append(tok)
+            self.i += 1
+
+        for indent in self.indent_stack:
+            if indent is None:
+                raise SyntaxError(UNCLOSED_BLOCK_ERROR)
+            self.result.finish()
+        if not self.result.finished:
+            raise SyntaxError(UNCLOSED_BLOCK_ERROR)
+
+    def _next_nonspace(self, i: int) -> str | None:
+        return next(
+            (
+                self.tokens[j]
+                for j in range(i + 1, len(self.tokens))
+                if not self.tokens[j].isspace()
+            ),
+            None,
+        )
+
+    def _parse_after_colon(self, tok: str):
+        if tok in self.NEWLINE_OR_COMMENT:
+            self.after_colon = False
+            self.capture_indent = True
+        elif not tok.isspace():
+            self.after_colon = False
+            self.finish_on_nl = True
+
+    def _parse_after_indent(self, tok: str):
+        self.after_indent = False
+        if tok in self.NEWLINE_OR_COMMENT:
+            if len(self.indent_stack) > 1:
+                self.indent_stack.pop()
+            self.capture_indent = True
+
+    def _parse_after_nl(self, tok: str):
+        self.after_nl = False
+        if all(b[1] for b in self.brace_stack):
+            self.accept_keyword = True
+            if tok not in self.NEWLINE_OR_COMMENT:
+                indent = tok if tok.isspace() else ""
+                while self.indent_stack[
+                    -1
+                ] is not None and not indent.startswith(self.indent_stack[-1]):
+                    self.result.append(self.indent_stack.pop())
+                    self.result.finish()
+                if self.capture_indent:
+                    self.capture_indent = False
+                    self.after_indent = True
+                    if indent:
+                        self.indent_stack.append(indent)
+
+    def _parse_accept_keyword(self, tok: str):
+        if not tok.isspace():
+            self.accept_keyword = False
+        if not self.in_head:
+            self.head_term = _get_head_terminator(
+                self.tokens, self.i, KEYWORDS
+            ) or _get_head_terminator(self.tokens, self.i, SOFT_KEYWORDS)
+            if self.head_term and all(b[1] for b in self.brace_stack):
+                self.result.append(Block())
+                self.in_head = True
+
+    def _parse_long_lambda(self, tok: str) -> bool:
+        terminator = _get_head_terminator(
+            self.tokens, self.i, {"lambda"}, True
+        )
+        if terminator == "{" or self.async_lambda:
+            if tok.isspace():
+                self.i += 1
+                return True
             if terminator != "{":
                 raise SyntaxError("async lambda must use braces")
-            i, lambda_body = _parse_long_lambda(
-                tokens, i, result, async_lambda, in_head
-            )
+            lambda_body = self._fully_parse_long_lambda()
             brace_stack_copy = []
-            for brace, is_block in reversed(brace_stack):
+            for brace, is_block in reversed(self.brace_stack):
                 if is_block:
                     break
                 brace_stack_copy.append(brace)
             brace_stack_copy.reverse()
-            result.insert_lambda(lambda_body, brace_stack_copy)
-            async_lambda = False
-            continue
-        if in_head:
-            if tok == "lambda":
-                seen_lambdas += 1
-                result.head_append(tok)
-            elif tok == ":" and seen_lambdas:
-                seen_lambdas -= 1
-                result.head_append(tok)
-            elif (
-                tok == head_term
-                and all(b[1] for b in brace_stack)
-                and not seen_lambdas
-            ):
-                in_head = False
-                block_started = True
-                after_colon = tok == ":"
+            self.result.insert_lambda(lambda_body, brace_stack_copy)
+            self.async_lambda = False
+            return True
+        return False
+
+    def _fully_parse_long_lambda(self) -> Block:
+        self.i += 1
+        brace_stack = []
+        body = Block()
+        in_body = False
+        while self.i < len(self.tokens):
+            tok = self.tokens[self.i]
+            if tok in BRACES:
+                brace_stack.append(tok)
+            elif tok in BRACES.values():
+                brace_stack.pop()
+            if not in_body and brace_stack == ["{"]:
+                in_body = True
+                self.i += 1
+                continue
+            if in_body:
+                if not brace_stack:
+                    break
+                body.append(tok)
             else:
-                result.head_append(tok)
-        skip = in_head or block_started
-        if tok in BRACES:
-            brace_stack.append((tok, block_started))
-            if block_started:
-                indent_stack.append(None)
-                accept_keyword = True
-        elif tok in BRACES.values():
-            try:
-                brace, block_finished = brace_stack.pop()
-            except IndexError as e:
-                raise SyntaxError(f"unmatched '{tok}'") from e
-            accept_keyword = block_finished
-            if BRACES[brace] != tok:
-                raise SyntaxError(
-                    f"closing parenthesis '{tok}' does not match"
-                    f" opening parenthesis '{brace}'"
-                )
-            if block_finished:
-                result.finish()
-                skip = True
-                if indent_stack.pop() is not None:
-                    raise SyntaxError("indented block was not properly closed")
-        if not skip:
-            result.append(tok)
-        i += 1
-    for i in indent_stack:
-        if i is None:
+                body.head_append(tok)
+            self.i += 1
+        if brace_stack:
             raise SyntaxError(UNCLOSED_BLOCK_ERROR)
-        result.finish()
-    if not result.finished:
-        raise SyntaxError(UNCLOSED_BLOCK_ERROR)
-    return result
+        head = "".join(body.head).strip()
+        if not head.startswith("(") or not head.endswith(")"):
+            head = "(" + head + ")"
+        name = _gen_lambda_name()
+        if self.in_head:
+            self.result.head_append(name)
+        else:
+            self.result.append(name)
+        body.head = list(
+            tokenize(("async " if self.async_lambda else "") + "def " + name + head)
+        )
+        # reparse because inner Bython code was not processed
+        code = body.unparse(depth=1)
+        body = parse(tokenize(code)).body[0]
+        # reparse again because we need to add return
+        code = _add_return(body.unparse(depth=1))
+        body = parse(tokenize(code)).body[0]
+        self.i += 1
+        return body
+
+    def _parse_in_head(self, tok: str):
+        if tok == "lambda":
+            self.seen_lambdas += 1
+            self.result.head_append(tok)
+        elif tok == ":" and self.seen_lambdas:
+            self.seen_lambdas -= 1
+            self.result.head_append(tok)
+        elif (
+            tok == self.head_term
+            and all(b[1] for b in self.brace_stack)
+            and not self.seen_lambdas
+        ):
+            self.in_head = False
+            self.block_started = True
+            self.after_colon = tok == ":"
+        else:
+            self.result.head_append(tok)
+
+    def _parse_tok_in_braces(self, tok: str):
+        self.brace_stack.append((tok, self.block_started))
+        if self.block_started:
+            self.indent_stack.append(None)
+            self.accept_keyword = True
+
+    def _parse_tok_in_braces_values(self, tok: str):
+        try:
+            brace, block_finished = self.brace_stack.pop()
+        except IndexError as e:
+            raise SyntaxError(f"unmatched '{tok}'") from e
+        self.accept_keyword = block_finished
+        if BRACES[brace] != tok:
+            raise SyntaxError(
+                f"closing parenthesis '{tok}' does not match"
+                f" opening parenthesis '{brace}'"
+            )
+        if block_finished:
+            self.result.finish()
+            self.skip = True
+            if self.indent_stack.pop() is not None:
+                raise SyntaxError("indented block was not properly closed")
+
+
+def parse(tokens: Iterable[str]) -> Block:
+    parser = Parser(tokens)
+    return parser.parse()
+
 
 
 def _transform(code: str, python: bool) -> str:
-    result = parse(expand_semicolons(tokenize(code + "\n")))
+    result = parse(tokenize(code + "\n"))
     return result.unparse(python)
 
 
