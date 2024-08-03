@@ -196,6 +196,9 @@ class Block:
         elif not body or body.isspace():
             body = inner_indent + "pass"
         if result:
+            stripped_body = body.lstrip(" ")
+            if stripped_body.startswith("#"):
+                return result + "  " + stripped_body
             result += "\n"
         return result + body.lstrip("\n")
 
