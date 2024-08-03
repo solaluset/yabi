@@ -284,8 +284,6 @@ def _gen_lambda_name() -> str:
 
 
 class Parser:
-    NEWLINE_OR_COMMENT = {"\n", "#"}
-
     def __init__(self, tokens: Iterable[str]):
         self.brace_stack = []
         self.indent_stack = [""]
@@ -322,6 +320,13 @@ class Parser:
                 tok = self.next_indent
                 self.next_indent = None
             self.block_started = False
+            if tok == "#":
+                while (
+                    self.i < len(self.tokens) and self.tokens[self.i] != "\n"
+                ):
+                    self.result.append(self.tokens[self.i])
+                    self.i += 1
+                continue
             if self.after_colon:
                 self._parse_after_colon(tok)
             elif self.after_indent:
@@ -376,7 +381,7 @@ class Parser:
         )
 
     def _parse_after_colon(self, tok: str):
-        if tok in self.NEWLINE_OR_COMMENT:
+        if tok == "\n":
             self.after_colon = False
             self.capture_indent = True
         elif not tok.isspace():
@@ -385,7 +390,7 @@ class Parser:
 
     def _parse_after_indent(self, tok: str):
         self.after_indent = False
-        if tok in self.NEWLINE_OR_COMMENT:
+        if tok == "\n":
             if len(self.indent_stack) > 1:
                 self.indent_stack.pop()
             self.capture_indent = True
@@ -394,7 +399,7 @@ class Parser:
         self.after_nl = False
         if all(b[1] for b in self.brace_stack):
             self.accept_keyword = True
-            if tok not in self.NEWLINE_OR_COMMENT:
+            if tok != "\n":
                 indent = tok if tok.isspace() else ""
                 while self.indent_stack[
                     -1
