@@ -7,8 +7,8 @@ from pytest import mark
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
-from yabi import main, to_bython
-from yabi.console import YabiConsole
+from yabi import main, to_bython, to_pure_python  # noqa: E402
+from yabi.console import YabiConsole  # noqa: E402
 
 
 sys.dont_write_bytecode = True
@@ -147,3 +147,7 @@ for (i in {1, 2, 3}) {
     """.strip()
         + "\n"
     )
+
+
+def test_comment_with_semicolon():
+    assert to_pure_python("# a; b").rstrip("\n") == "# a; b"
