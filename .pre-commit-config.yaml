@@ -17,3 +17,4 @@ repos:
     rev: 7.1.0
     hooks:
     -   id: flake8
+        args: ["--ignore", "E203,W503"]
