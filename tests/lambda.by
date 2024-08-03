@@ -28,7 +28,7 @@ def b() {
 assert b() == 1
 
 li = [2, 1, 3]
-li.sort(key=lambda x { -x })
+li.sort(key=lambda (x) { -x })
 assert li == [3, 2, 1]
 
 if lambda {} {

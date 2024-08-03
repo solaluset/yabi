@@ -61,6 +61,13 @@ def _has_opening_brace(tokens: list[str]) -> bool:
     return False
 
 
+def strip_spaces(tokens: list[str]) -> None:
+    while tokens and tokens[0].isspace():
+        del tokens[0]
+    while tokens and tokens[-1].isspace():
+        del tokens[-1]
+
+
 class Block:
     def __init__(self):
         self.head = []
@@ -152,10 +159,7 @@ class Block:
         if self.head:
             result, *head = self.head
             if head:
-                while head and head[0].isspace():
-                    del head[0]
-                while head and head[-1].isspace():
-                    del head[-1]
+                strip_spaces(head)
                 if pure_python:
                     if (
                         (head and head[0] == "(" and head[-1] == ")")
@@ -440,7 +444,8 @@ class Parser:
     def _fully_parse_long_lambda(self) -> Block:
         self.i += 1
         brace_stack = []
-        body = Block()
+        head = []
+        body_start = None
         in_body = False
         while self.i < len(self.tokens):
             tok = self.tokens[self.i]
@@ -450,31 +455,32 @@ class Parser:
                 brace_stack.pop()
             if not in_body and brace_stack == ["{"]:
                 in_body = True
-                self.i += 1
-                continue
+                body_start = self.i
             if in_body:
                 if not brace_stack:
                     break
-                body.append(tok)
             else:
-                body.head_append(tok)
+                head.append(tok)
             self.i += 1
         if brace_stack:
             raise SyntaxError(UNCLOSED_BLOCK_ERROR)
-        head = "".join(body.head).strip()
-        if not head.startswith("(") or not head.endswith(")"):
-            head = "(" + head + ")"
+
         name = _gen_lambda_name()
         if self.in_head:
             self.result.head_append(name)
         else:
             self.result.append(name)
-        body.head = list(
-            tokenize(("async " if self.async_lambda else "") + "def " + name + head)
-        )
+
+        strip_spaces(head)
+        if not head or not head[0] == "(" or not head[-1] == ")":
+            head.insert(0, "(")
+            head.append(")")
+        head = ["def", " ", name] + head
+        if self.async_lambda:
+            head = ["async", " "] + head
+
         # reparse because inner Bython code was not processed
-        code = body.unparse(depth=1)
-        body = parse(tokenize(code)).body[0]
+        body = parse(head + self.tokens[body_start : self.i + 1]).body[0]
         # reparse again because we need to add return
         code = _add_return(body.unparse(depth=1))
         body = parse(tokenize(code)).body[0]
@@ -526,7 +532,6 @@ class Parser:
 def parse(tokens: Iterable[str]) -> Block:
     parser = Parser(tokens)
     return parser.parse()
-
 
 
 def _transform(code: str, python: bool) -> str:
