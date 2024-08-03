@@ -56,7 +56,7 @@ class YabiConsole(InteractiveConsole):
             return True
         except SystemExit:
             raise
-        except:
+        except BaseException:
             self.showtraceback()
             return False
 
