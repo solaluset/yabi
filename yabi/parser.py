@@ -315,13 +315,12 @@ class Parser:
 
     def _parse(self):
         while self.i < len(self.tokens):
+            tok = self.tokens[self.i]
             if self.next_indent is not None:
                 if not tok.isspace():
                     self.i -= 1
                 tok = self.next_indent
                 self.next_indent = None
-            else:
-                tok = self.tokens[self.i]
             self.block_started = False
             if self.after_colon:
                 self._parse_after_colon(tok)
