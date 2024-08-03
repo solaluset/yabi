@@ -49,32 +49,6 @@ def get_token_type(token: str) -> int:
     return tok.type
 
 
-def expand_semicolons(tokens: Iterable[str]) -> Generator[str, None, None]:
-    after_nl = True
-    after_semicolon = False
-    for tok in tokens:
-        if tok == "\n":
-            after_nl = True
-            after_semicolon = False
-        elif after_nl:
-            after_nl = False
-            if tok.isspace():
-                indent = tok
-            else:
-                indent = ""
-        if tok == ";":
-            after_semicolon = True
-            continue
-        elif after_semicolon:
-            after_semicolon = False
-            yield "\n"
-            if indent:
-                yield indent
-            if tok.isspace():
-                continue
-        yield tok
-
-
 def _has_opening_brace(tokens: list[str]) -> bool:
     stack = []
     for tok in tokens:
@@ -337,7 +311,13 @@ class Parser:
 
     def _parse(self):
         while self.i < len(self.tokens):
-            tok = self.tokens[self.i]
+            if self.next_indent is not None:
+                if not tok.isspace():
+                    self.i -= 1
+                tok = self.next_indent
+                self.next_indent = None
+            else:
+                tok = self.tokens[self.i]
             self.block_started = False
             if self.after_colon:
                 self._parse_after_colon(tok)
@@ -345,6 +325,9 @@ class Parser:
                 self._parse_after_indent(tok)
             elif self.after_nl:
                 self._parse_after_nl(tok)
+            if tok == ";" and not self.finish_on_nl:
+                tok = "\n"
+                self.next_indent = self.indent_stack[-1]
             if tok == "\n":
                 self.after_nl = True
                 if self.finish_on_nl:
