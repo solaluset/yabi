@@ -151,3 +151,11 @@ for (i in {1, 2, 3}) {
 
 def test_comment_with_semicolon():
     assert to_pure_python("# a; b").rstrip("\n") == "# a; b"
+
+
+def test_inline_comment():
+    code = """
+if 1:  # 2
+    3
+    """.strip()
+    assert to_pure_python(code).strip() == code
