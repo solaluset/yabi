@@ -1,11 +1,9 @@
 import os
 import sys
 import argparse
-from io import TextIOBase
 from importlib import metadata
 
 import pwcp
-from pwcp.preprocessor import PyPreprocessor, preprocess
 
 from . import config
 from .parser import to_pure_python
@@ -41,25 +39,22 @@ parser.add_argument("target", nargs=argparse.OPTIONAL)
 parser.add_argument("args", nargs=argparse.ZERO_OR_MORE)
 
 
-def preproc(src, p=None):
-    if p is None:
-        if not isinstance(src, TextIOBase) or src.name.endswith(
-            config.EXTENSION
-        ):
-            p = PyPreprocessor(disabled=True)
-    res, deps = preprocess(src, p)
-    return to_pure_python(res), deps
-
-
 def main(args=sys.argv[1:]):
     args = parser.parse_args(args)
 
-    pwcp.config.FILE_EXTENSIONS.append(config.EXTENSION)
-    pwcp.preprocessor.preprocess = preproc
+    pwcp.add_file_extension(config.EXTENSION)
+
+    def preprocess(src, filename, preprocessor):
+        if filename.endswith(config.EXTENSION):
+            preprocessor.disabled = True
+        return to_pure_python(orig_preprocess(src, filename, preprocessor))
+
+    orig_preprocess = pwcp.set_preprocessing_function(preprocess)
+
     config.SAVE_FILES = args.save_files
 
     if not args.target:
         args.m = True
         args.target = f"{__package__}.console"
 
-    pwcp.main_with_params(**vars(args))
+    pwcp.main_with_params(**vars(args), preprocess_unknown_sources=False)

@@ -2,9 +2,8 @@ import sys
 import ast
 from code import InteractiveConsole
 
-from pwcp.preprocessor import PyPreprocessor, PreprocessorError
+from pwcp.preprocessor import PyPreprocessor, PreprocessorError, preprocess
 
-from .runner import preproc
 from .parser import UNCLOSED_BLOCK_ERROR, to_pure_python
 
 
@@ -15,7 +14,9 @@ class YabiConsole(InteractiveConsole):
 
     def runsource(self, source, filename="<input>", symbol="single") -> bool:
         try:
-            parsed = to_pure_python(preproc(source, self.preprocessor)[0])
+            parsed = to_pure_python(
+                preprocess(source, filename, self.preprocessor)[0]
+            )
         except PreprocessorError:
             self.showtraceback()
             return False
