@@ -3,7 +3,7 @@ requires = ["setuptools", "wheel"]
 
 [project]
 name = "yabi-bython"
-version = "0.7.2"
+version = "0.7.3"
 description = "Yet Another Bython (braced Python) Implementation"
 authors = [{name = "Sóla Lusøt"}]
 readme = "README.md"
