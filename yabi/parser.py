@@ -268,6 +268,12 @@ def _get_head_terminator(
     return "{" if potential_block else None
 
 
+def _insert_into_line(line: str, index: int, part: str):
+    line = list(line)
+    line.insert(index, part)
+    return "".join(line)
+
+
 def _add_return(code: str) -> str:
     # same as `ast.parse`, but with non-overriden compile
     tree = compile(code, "<string>", "exec", ast.PyCF_ONLY_AST)
@@ -275,10 +281,16 @@ def _add_return(code: str) -> str:
     if not isinstance(last_node, ast.Expr):
         return code
     code = code.splitlines()
-    line = list(code[last_node.lineno - 1])
-    line.insert(last_node.col_offset, "return (")
-    line.insert(last_node.end_col_offset + 1, ")")
-    code[last_node.lineno - 1] = "".join(line)
+    code[last_node.end_lineno - 1] = _insert_into_line(
+        code[last_node.end_lineno - 1],
+        last_node.end_col_offset + 1,
+        ")",
+    )
+    code[last_node.lineno - 1] = _insert_into_line(
+        code[last_node.lineno - 1],
+        last_node.col_offset,
+        "return (",
+    )
     return "\n".join(code)
 
 
