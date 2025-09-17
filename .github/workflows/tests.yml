@@ -4,7 +4,7 @@ on: [push]
 
 jobs:
   Test:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     strategy:
       matrix:
         python-version:
@@ -13,7 +13,8 @@ jobs:
           - "3.10"
           - "3.11"
           - "3.12"
-          - "3.13-dev"
+          - "3.13"
+          - "3.14-dev"
           - "pypy-3.8"
           - "pypy-3.9"
           - "pypy-3.10"
@@ -29,3 +30,18 @@ jobs:
 
     - name: Test
       run: yabi --version && pytest
+
+  Check:
+    runs-on: ubuntu-22.04
+
+    steps:
+    - uses: actions/checkout@v5
+    - uses: actions/setup-python@v5
+      with:
+        python-version: "3.13"
+
+    - name: Install packages
+      run: pip install pre-commit
+
+    - name: Check
+      run: pre-commit run --all

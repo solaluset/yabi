@@ -3,11 +3,11 @@ requires = ["setuptools", "wheel"]
 
 [project]
 name = "yabi-bython"
-version = "0.7.3"
+version = "0.8.0"
 description = "Yet Another Bython (braced Python) Implementation"
 authors = [{name = "Sóla Lusøt"}]
 readme = "README.md"
-dependencies = ["pwcp>=0.10,<0.11"]
+dependencies = ["pwcp>=0.11,<0.12"]
 optional-dependencies = {tests = ["pytest"]}
 scripts = {yabi = "yabi:main", yabi-convert = "yabi:convert_main"}
 
