@@ -24,6 +24,9 @@ parser.add_argument(
 )
 parser.add_argument("-m", action="store_true", help="run target as module")
 parser.add_argument(
+    "-c", action="store_true", help="run target as command line"
+)
+parser.add_argument(
     "--prefer-py",
     dest="prefer_python",
     action="store_true",
