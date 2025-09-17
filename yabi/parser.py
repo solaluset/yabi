@@ -542,6 +542,9 @@ class Parser:
                 f" opening parenthesis '{brace}'"
             )
         if block_finished:
+            if self.finish_on_nl:
+                self.finish_on_nl = False
+                self.result.finish()
             self.result.finish()
             self.skip = True
             if self.indent_stack.pop() is not None:
