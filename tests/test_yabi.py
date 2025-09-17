@@ -153,6 +153,10 @@ def test_comment_with_semicolon():
     assert to_pure_python("# a; b").rstrip("\n") == "# a; b"
 
 
+def test_semicolon_parse():
+    assert to_pure_python("; while True {}") == "while True:\n    pass\n"
+
+
 def test_inline_comment():
     code = """
 if 1:  # 2
