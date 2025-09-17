@@ -350,7 +350,7 @@ class Parser:
                 self._parse_after_nl(tok)
             if tok == ";" and not self.finish_on_nl:
                 tok = "\n"
-                self.next_indent = self.indent_stack[-1]
+                self.next_indent = self.indent_stack[-1] or None
             if tok == "\n":
                 self.after_nl = True
                 if self.finish_on_nl:
