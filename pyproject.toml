@@ -1,5 +1,6 @@
 [build-system]
-requires = ["setuptools", "wheel"]
+requires = ["hatchling", "wheel"]
+build-backend = "hatchling.build"
 
 [project]
 name = "yabi-bython"
@@ -7,9 +8,11 @@ version = "0.8.1"
 description = "Yet Another Bython (braced Python) Implementation"
 authors = [{name = "Sóla Lusøt"}]
 readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE.md"]
 dependencies = ["pwcp>=0.11,<0.12"]
 optional-dependencies = {tests = ["pytest"]}
 scripts = {yabi = "yabi:main", yabi-convert = "yabi:convert_main"}
 
-[tool.setuptools]
+[tool.hatch.build.targets.wheel]
 packages = ["yabi"]
