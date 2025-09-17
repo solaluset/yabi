@@ -17,6 +17,8 @@ yabi file.by
 yabi -m module
 # run interactive console
 yabi
+# run code from command line
+yabi -c "import os; try { os.remove('/') } except { print('Bruh') }"
 ```
 
 Run `yabi --help` to see other options.
@@ -54,4 +56,4 @@ yabi-convert something.py > something.by
 
 ## Acknowledgements
 
-Inspired by https://github.com/mathialo/bython
+Inspired by https://github.com/mathialo/bython and my friend ByThon.
