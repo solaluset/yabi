@@ -13,3 +13,6 @@ license-files = ["LICENSE.md"]
 dependencies = ["pwcp>=0.11,<0.12"]
 optional-dependencies = {tests = ["pytest"]}
 scripts = {yabi = "yabi:main", yabi-convert = "yabi:convert_main"}
+
+[tool.hatch.build.targets.wheel]
+packages = ["yabi"]
