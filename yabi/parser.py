@@ -255,7 +255,11 @@ def _get_head_terminator(
                     ),
                     None,
                 )
-                if not (next_tok == ":" if only_colon else _is_op(next_tok)):
+                if only_colon:
+                    if next_tok == ":":
+                        return ":"
+                    return "{"
+                if not _is_op(next_tok) or next_tok == ";":
                     return "{"
                 return ":"
         if brace_stack == ["{"] and not _is_op(prev_tok):
