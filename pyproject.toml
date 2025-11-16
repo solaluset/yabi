@@ -14,5 +14,8 @@ dependencies = ["pwcp>=0.12,<0.13"]
 optional-dependencies = {tests = ["pytest"]}
 scripts = {yabi = "yabi:main", yabi-convert = "yabi:convert_main"}
 
+[project.urls]
+Repository = "https://github.com/solaluset/yabi"
+
 [tool.hatch.build.targets.wheel]
 packages = ["yabi"]
