@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "yabi-bython"
-version = "0.8.2"
+version = "0.8.3"
 description = "Yet Another Bython (braced Python) Implementation"
 authors = [{name = "Sóla Lusøt"}]
 readme = "README.md"
