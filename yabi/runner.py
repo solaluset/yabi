@@ -39,7 +39,7 @@ parser.add_argument(
     help="save .by files to .py after preprocessing",
 )
 parser.add_argument("target", nargs=argparse.OPTIONAL)
-parser.add_argument("args", nargs=argparse.ZERO_OR_MORE)
+parser.add_argument("args", nargs=argparse.REMAINDER)
 
 
 def main(args=sys.argv[1:]):
