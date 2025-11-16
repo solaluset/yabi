@@ -3,21 +3,21 @@ name: CI
 on: [push]
 
 jobs:
+  generate-matrix:
+    uses: solaluset/python-version-matrix/.github/workflows/generate.yml@v1.0
+    with:
+      runners: '[
+        "ubuntu-22.04"
+      ]'
+      min-version: "3.8"
+      include-pre-releases: true
+      implementations: '["CPython", "PyPy"]'
+
   Test:
-    runs-on: ubuntu-22.04
+    needs: [generate-matrix]
+    runs-on: ${{ matrix.runner }}
     strategy:
-      matrix:
-        python-version:
-          - "3.8"
-          - "3.9"
-          - "3.10"
-          - "3.11"
-          - "3.12"
-          - "3.13"
-          - "3.14-dev"
-          - "pypy-3.8"
-          - "pypy-3.9"
-          - "pypy-3.10"
+      matrix: ${{ fromJson(needs.generate-matrix.outputs.matrix) }}
 
     steps:
     - uses: actions/checkout@v5
