@@ -4,15 +4,18 @@ build-backend = "hatchling.build"
 
 [project]
 name = "yabi-bython"
-version = "0.8.1"
+version = "0.8.2"
 description = "Yet Another Bython (braced Python) Implementation"
 authors = [{name = "Sóla Lusøt"}]
 readme = "README.md"
 license = "MIT"
 license-files = ["LICENSE.md"]
-dependencies = ["pwcp>=0.11,<0.12"]
+dependencies = ["pwcp>=0.12,<0.13"]
 optional-dependencies = {tests = ["pytest"]}
 scripts = {yabi = "yabi:main", yabi-convert = "yabi:convert_main"}
+
+[project.urls]
+Repository = "https://github.com/solaluset/yabi"
 
 [tool.hatch.build.targets.wheel]
 packages = ["yabi"]
