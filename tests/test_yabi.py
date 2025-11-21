@@ -12,6 +12,8 @@ from yabi.console import YabiConsole  # noqa: E402
 
 
 sys.dont_write_bytecode = True
+sys.ps1 = getattr(sys, "ps1", ">>> ")
+sys.ps2 = getattr(sys, "ps2", "... ")
 
 
 def check_file(file, expexted_output, *args):
