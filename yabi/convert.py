@@ -13,10 +13,11 @@ parser.add_argument(
     action="store_true",
     help="convert Bython to Python",
 )
-parser.add_argument("target", type=argparse.FileType())
+parser.add_argument("target")
 
 
 def convert_main(args=sys.argv[1:]):
     args = parser.parse_args(args)
     converter = to_pure_python if args.to_python else to_bython
-    print(converter(args.target.read()).rstrip("\n"))
+    with open(args.target) as source:
+        print(converter(source.read()).rstrip("\n"))
