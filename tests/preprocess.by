@@ -1,0 +1,6 @@
+#define text "default"
+#pragma pypp on
+#if !defined(text)
+  #define text "forced"
+#endif
+print(text)

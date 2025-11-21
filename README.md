@@ -44,6 +44,12 @@ if (x := {a for a in range(n)}) { print("Hello") }
 Braces and semicolons allow to make any code a one-liner.
 But, like, why would you do that?
 
+## C-style preprocessing?!
+
+In case braces aren't enough for you, there's an option to enable C-style preprocessing.
+You can do so by passing `--enable-preprocessing` as argument to YABI or putting `#pragma pypp on` into the code.
+YABI heavily relies on [PWCP](https://pypi.org/project/pwcp/) after all.
+
 ## Converting Python files
 
 You don't need to convert anything because `.py` files can be imported into `.by`.
