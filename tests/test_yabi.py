@@ -7,16 +7,16 @@ from pytest import mark
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
-from yabi import main, to_bython, to_pure_python  # noqa: E402
+from yabi import config, main, to_bython, to_pure_python  # noqa: E402
 from yabi.console import YabiConsole  # noqa: E402
 
 
 sys.dont_write_bytecode = True
 
 
-def check_file(file, expexted_output):
+def check_file(file, expexted_output, *args):
     with patch("sys.stdout", new=StringIO()):
-        main([file])
+        main(args + (file,))
         assert sys.stdout.getvalue() == expexted_output
 
 
@@ -163,3 +163,20 @@ if 1:  # 2
     3
     """.strip()
     assert to_pure_python(code).strip() == code
+
+
+def test_preprocessing():
+    with open("tests/preprocess.by") as f:
+        code = f.read()
+    expected = sys.ps1 * 3 + sys.ps2 * 2 + sys.ps1 + "{}\n" + sys.ps1
+
+    check_file("tests/preprocess.by", "forced\n")
+    check_console(code, expected.format("forced"))
+
+    check_file("tests/preprocess.by", "default\n", "--enable-preprocessing")
+
+    config.ENABLE_PREPROCESSING = True
+    try:
+        check_console(code, expected.format("default"))
+    finally:
+        config.ENABLE_PREPROCESSING = False
