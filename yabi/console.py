@@ -4,13 +4,16 @@ from code import InteractiveConsole
 
 from pwcp.preprocessor import PyPreprocessor, PreprocessorError, preprocess
 
+from . import config
 from .parser import UNCLOSED_BLOCK_ERROR, to_pure_python
 
 
 class YabiConsole(InteractiveConsole):
     def __init__(self):
         super().__init__()
-        self.preprocessor = PyPreprocessor(disabled=True)
+        self.preprocessor = PyPreprocessor(
+            disabled=not config.ENABLE_PREPROCESSING
+        )
 
     def runsource(self, source, filename="<input>", symbol="single") -> bool:
         try:
