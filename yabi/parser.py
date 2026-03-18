@@ -126,10 +126,6 @@ class Block:
         braces_opened = 0
         i = 0
         while i < len(self.body):
-            if self.body[i] in BRACES:
-                braces_opened += 1
-            elif self.body[i] in BRACES.values():
-                braces_opened -= 1
             if isinstance(self.body[i], Block):
                 if (
                     i != 0
@@ -151,6 +147,10 @@ class Block:
                     else:
                         self.body.insert(i, indent)
                         i += 1
+            if self.body[i] in BRACES:
+                braces_opened += 1
+            elif self.body[i] in BRACES.values():
+                braces_opened -= 1
             i += 1
 
     def unparse(self, pure_python=True, depth=0) -> str:
