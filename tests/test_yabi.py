@@ -136,6 +136,7 @@ for i in {1, 2, 3}:
         print("Yes")
     else:
    !
+   /* these comments too */
         print("No")
     """.strip().replace(
                 "!", ""
@@ -149,6 +150,7 @@ for (i in {1, 2, 3}) {
     }
     else {
         !
+        /* these comments too */
         print("No")
     }
 }
