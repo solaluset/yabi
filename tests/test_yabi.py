@@ -132,21 +132,29 @@ def test_to_bython():
             """
 for i in {1, 2, 3}:
     if i % 2 == 1:
+   # weird spaces may disrupt the parser
         print("Yes")
     else:
+   !
         print("No")
-    """.strip()
+    """.strip().replace(
+                "!", ""
+            )
         )
         == """
 for (i in {1, 2, 3}) {
     if i % 2 == 1 {
+        # weird spaces may disrupt the parser
         print("Yes")
     }
     else {
+        !
         print("No")
     }
 }
-    """.strip()
+    """.strip().replace(
+            "!", ""
+        )
         + "\n"
     )
 
