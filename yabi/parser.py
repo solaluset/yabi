@@ -419,7 +419,14 @@ class Parser:
         if all(b[1] for b in self.brace_stack):
             self.accept_keyword = True
             if tok != "\n":
-                indent = tok if tok.isspace() else ""
+                if tok.isspace():
+                    if self.i + 1 < len(self.tokens) and self.tokens[
+                        self.i + 1
+                    ] in {"\n", "#"}:
+                        return
+                    indent = tok
+                else:
+                    indent = ""
                 while self.indent_stack[
                     -1
                 ] is not None and not indent.startswith(self.indent_stack[-1]):
