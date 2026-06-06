@@ -422,7 +422,7 @@ class Parser:
                 if tok.isspace():
                     if self.i + 1 < len(self.tokens) and self.tokens[
                         self.i + 1
-                    ] in {"\n", "#"}:
+                    ].startswith(("\n", "#", "/*")):
                         return
                     indent = tok
                 else:
