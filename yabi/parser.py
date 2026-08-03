@@ -309,7 +309,7 @@ class Parser:
         self.result = None
         self.in_head = False
         self.after_colon = False
-        self.finish_on_nl = False
+        self.finish_on_nl = 0
         self.capture_indent = False
         self.after_indent = False
         self.after_nl = True
@@ -318,7 +318,6 @@ class Parser:
         self.seen_lambdas = 0
         self.block_started = False
         self.skip = False
-        self.next_indent = None
         self.head_term = None
         self.tokens = [tok for tok in tokens if tok]
         self.i = 0
@@ -333,11 +332,6 @@ class Parser:
     def _parse(self):
         while self.i < len(self.tokens):
             tok = self.tokens[self.i]
-            if self.next_indent is not None:
-                if not tok.isspace():
-                    self.i -= 1
-                tok = self.next_indent
-                self.next_indent = None
             self.block_started = False
             if tok == "#":
                 while (
@@ -347,19 +341,20 @@ class Parser:
                     self.i += 1
                 continue
             if self.after_colon:
+                self.accept_keyword = True
                 self._parse_after_colon(tok)
             elif self.after_indent:
                 self._parse_after_indent(tok)
             elif self.after_nl:
                 self._parse_after_nl(tok)
-            if tok == ";" and not self.finish_on_nl:
+            if tok == ";":
                 tok = "\n"
-                self.next_indent = self.indent_stack[-1] or None
-            if tok == "\n":
                 self.after_nl = True
-                if self.finish_on_nl:
-                    self.finish_on_nl = False
+            elif tok == "\n":
+                self.after_nl = True
+                for _ in range(self.finish_on_nl):
                     self.result.finish()
+                self.finish_on_nl = 0
             elif tok == "async" and self._next_nonspace(self.i) == "lambda":
                 self.async_lambda = True
                 self.i += 1
@@ -405,7 +400,7 @@ class Parser:
             self.capture_indent = True
         elif not tok.isspace():
             self.after_colon = False
-            self.finish_on_nl = True
+            self.finish_on_nl += 1
 
     def _parse_after_indent(self, tok: str):
         self.after_indent = False
@@ -553,9 +548,9 @@ class Parser:
                 f" opening parenthesis '{brace}'"
             )
         if block_finished:
-            if self.finish_on_nl:
-                self.finish_on_nl = False
+            for _ in range(self.finish_on_nl):
                 self.result.finish()
+            self.finish_on_nl = 0
             self.result.finish()
             self.skip = True
             if self.indent_stack.pop() is not None:
