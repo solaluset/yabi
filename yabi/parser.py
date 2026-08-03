@@ -377,12 +377,10 @@ class Parser:
                 self.result.append(tok)
             self.i += 1
 
-        for indent in self.indent_stack:
-            if indent is None:
-                raise SyntaxError(UNCLOSED_BLOCK_ERROR)
-            self.result.finish()
-        if not self.result.finished:
+        if any(indent is None for indent in self.indent_stack):
             raise SyntaxError(UNCLOSED_BLOCK_ERROR)
+        while not self.result.finished:
+            self.result.finish()
 
     def _next_nonspace(self, i: int) -> str | None:
         return next(
@@ -563,7 +561,7 @@ def parse(tokens: Iterable[str]) -> Block:
 
 
 def _transform(code: str, python: bool) -> str:
-    result = parse(tokenize(code + "\n"))
+    result = parse(tokenize(code))
     return result.unparse(python)
 
 
