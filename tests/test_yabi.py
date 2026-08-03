@@ -167,6 +167,17 @@ def test_comment_with_semicolon():
 
 def test_semicolon_parse():
     assert to_pure_python("; while True {}") == "while True:\n    pass\n"
+    assert (
+        to_pure_python("if True: if True: pass; while True: pass")
+        == """
+if True:
+    if True:
+        pass
+        while True:
+            pass
+    """.strip()
+        + "\n\n\n"
+    )
 
 
 def test_inline_comment():
