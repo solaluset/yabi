@@ -4,7 +4,7 @@ on: [push]
 
 jobs:
   generate-matrix:
-    uses: solaluset/python-version-matrix/.github/workflows/generate.yml@v1.0.1
+    uses: solaluset/python-version-matrix/.github/workflows/generate.yml@v1.1.0
     with:
       runners: '[
         "ubuntu-24.04"
