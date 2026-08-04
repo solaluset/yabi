@@ -135,7 +135,7 @@ class Block:
                 ):
                     del self.body[i - 1]
                     i -= 1
-                if i + 1 == len(self.body) or self.body[i + 1] != "\n":
+                if i + 1 < len(self.body) and self.body[i + 1] != "\n":
                     self.body.insert(i + 1, "\n")
             elif self.body[i] == "\n":
                 after_nl = True
