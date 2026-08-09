@@ -1,5 +1,6 @@
 from pwcp import PreprocessorHooks, PycType
 
+from . import config
 from .version import __version__
 from .parser import to_pure_python
 
@@ -14,7 +15,13 @@ class YabiHooks(PreprocessorHooks):
         return to_pure_python(source), None
 
     def create_pyc_data(self, data: None, pyc_type: PycType) -> dict:
-        return {"version": __version__}
+        return {
+            "version": __version__,
+            "preprocessing": config.ENABLE_PREPROCESSING,
+        }
 
     def validate_pyc_data(self, pyc: dict, pyc_type: PycType) -> bool:
-        return pyc["version"] == __version__
+        return (
+            pyc["version"] == __version__
+            and pyc["preprocessing"] == config.ENABLE_PREPROCESSING
+        )
