@@ -49,12 +49,14 @@ parser.add_argument("args", nargs=argparse.REMAINDER)
 def main(args=sys.argv[1:]):
     args = parser.parse_args(args)
 
-    pwcp.add_file_extension(config.EXTENSION)
-    pwcp.add_hook(YabiHooks())
-
     config.SAVE_FILES = args.save_files
     config.ENABLE_PREPROCESSING = args.enable_preprocessing
     del args.enable_preprocessing
+
+    pwcp.add_file_extension(
+        config.EXTENSION, preprocess=config.ENABLE_PREPROCESSING
+    )
+    pwcp.add_hook(YabiHooks())
 
     if not args.target:
         args.m = True
