@@ -1,15 +1,13 @@
 import os
 import sys
 import argparse
-from importlib import metadata
 
 import pwcp
 
 from . import config
-from .parser import to_pure_python
+from .hooks import YabiHooks
+from .version import __version__
 
-
-__version__ = metadata.version("yabi-bython")
 
 parser = argparse.ArgumentParser(
     (
@@ -52,15 +50,7 @@ def main(args=sys.argv[1:]):
     args = parser.parse_args(args)
 
     pwcp.add_file_extension(config.EXTENSION)
-
-    def preprocess(src, filename, preprocessor):
-        if not config.ENABLE_PREPROCESSING and filename.endswith(
-            config.EXTENSION
-        ):
-            preprocessor.disabled = True
-        return to_pure_python(orig_preprocess(src, filename, preprocessor))
-
-    orig_preprocess = pwcp.set_preprocessing_function(preprocess)
+    pwcp.add_hook(YabiHooks())
 
     config.SAVE_FILES = args.save_files
     config.ENABLE_PREPROCESSING = args.enable_preprocessing
@@ -71,5 +61,5 @@ def main(args=sys.argv[1:]):
         args.target = f"{__package__}.console"
 
     pwcp.main_with_params(
-        **vars(args), preprocess_unknown_sources=config.ENABLE_PREPROCESSING
+        **vars(args), skip_unknown_sources=not config.ENABLE_PREPROCESSING
     )
