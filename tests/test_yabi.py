@@ -126,6 +126,19 @@ if \\
     check_console(code, expexted_output)
 
 
+def test_console_preprocessing():
+    code = (
+        """
+#pragma pypp on
+#define a 1
+a
+    """.strip()
+        + "\n"
+    )
+    expexted_output = ">>> >>> >>> 1\n>>> "
+    check_console(code, expexted_output)
+
+
 def test_to_bython():
     assert (
         to_bython(
