@@ -2,7 +2,6 @@ from __future__ import annotations
 import ast
 import random
 from io import StringIO
-from builtins import compile
 from string import ascii_letters
 from typing import Generator, Iterable
 from tokenize import NAME, OP, generate_tokens
@@ -279,8 +278,7 @@ def _insert_into_line(line: str, index: int, part: str):
 
 
 def _add_return(code: str) -> str:
-    # same as `ast.parse`, but with non-overriden compile
-    tree = compile(code, "<string>", "exec", ast.PyCF_ONLY_AST)
+    tree = ast.parse(code)
     last_node = tree.body[0].body[-1]
     if not isinstance(last_node, ast.Expr):
         return code
