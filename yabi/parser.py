@@ -1,8 +1,6 @@
 from __future__ import annotations
 import ast
-import random
 from io import StringIO
-from string import ascii_letters
 from typing import Generator, Iterable
 from tokenize import NAME, OP, generate_tokens
 
@@ -296,8 +294,14 @@ def _add_return(code: str) -> str:
     return "\n".join(code)
 
 
+_lambda_count = 0
+
+
 def _gen_lambda_name() -> str:
-    return "_yabi_lambda_" + "".join(random.choices(ascii_letters, k=16))
+    global _lambda_count
+
+    _lambda_count += 1
+    return f"_yabi_lambda_{_lambda_count:016x}"
 
 
 class Parser:
