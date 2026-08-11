@@ -199,6 +199,25 @@ if 1:  # 2
     assert to_pure_python(code).strip() == code
 
 
+def test_c_comment():
+    assert to_pure_python("/* test */") == "# test"
+    assert (
+        to_pure_python(
+            """
+/* one
+ more
+ test */
+    """
+        )
+        == """
+# one
+# more
+# test
+    """.strip()
+        + "\n"
+    )
+
+
 def test_preprocessing():
     with open("tests/preprocess.by") as f:
         code = f.read()

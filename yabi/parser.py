@@ -65,6 +65,13 @@ def strip_spaces(tokens: list[str]) -> None:
         del tokens[-1]
 
 
+def to_python_comment(part: str) -> str:
+    if not part.startswith("/*") or not part.endswith("*/"):
+        return part
+    part = part.replace("/*", "#", 1).removesuffix("*/").rstrip()
+    return part.replace("\n", "\n#")
+
+
 class Block:
     def __init__(self):
         self.head = []
@@ -180,7 +187,7 @@ class Block:
             (
                 child.unparse(pure_python, depth + 1)
                 if isinstance(child, Block)
-                else child
+                else (to_python_comment(child) if pure_python else child)
             )
             for child in self.body
         )
