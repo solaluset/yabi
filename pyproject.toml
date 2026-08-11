@@ -12,7 +12,7 @@ license = "MIT"
 license-files = ["LICENSE.md"]
 dependencies = ["pwcp>=0.12.2,<0.13"]
 optional-dependencies = {tests = ["pytest"]}
-scripts = {yabi = "yabi:main", yabi-convert = "yabi:convert_main"}
+scripts = {yabi = "yabi:main", yabi-convert = "yabi.convert:main"}
 
 [project.urls]
 Repository = "https://github.com/solaluset/yabi"

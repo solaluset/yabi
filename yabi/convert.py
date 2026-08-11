@@ -16,8 +16,12 @@ parser.add_argument(
 parser.add_argument("target")
 
 
-def convert_main(args=sys.argv[1:]):
+def main(args=sys.argv[1:]):
     args = parser.parse_args(args)
     converter = to_pure_python if args.to_python else to_bython
     with open(args.target) as source:
         print(converter(source.read()).rstrip("\n"))
+
+
+if __name__ == "__main__":
+    main()
