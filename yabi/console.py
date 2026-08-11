@@ -15,15 +15,12 @@ class YabiConsole(InteractiveConsole):
     def runsource(self, source, filename="<input>", symbol="single") -> bool:
         try:
             parsed = preprocess(source, filename, self.pwcp_data)[0]
-        except PreprocessorError:
-            self.showtraceback()
-            return False
-        except SyntaxError as e:
+        except (PreprocessorError, SyntaxError) as e:
             if e.args[0] == UNCLOSED_BLOCK_ERROR or e.args[0].startswith(
                 "Unterminated"
             ):
                 return True
-            self.showtraceback()
+            self.showsyntaxerror(filename)
             return False
         if not source.endswith("\n"):
             parsed = parsed.rstrip("\n")
@@ -64,9 +61,6 @@ class YabiConsole(InteractiveConsole):
             return None
         try:
             return self.compile(source, filename, symbol)
-        except PreprocessorError:
-            self.showtraceback()
-            return self.compile("", filename, symbol)
         except SyntaxError:
             if "\n" in original_source and not source.endswith("\n"):
                 return None
