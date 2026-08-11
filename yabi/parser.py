@@ -34,6 +34,10 @@ INDENT_SIZE = 4
 UNCLOSED_BLOCK_ERROR = "there is an unclosed block"
 
 
+class YabiSyntaxError(SyntaxError):
+    pass
+
+
 def tokenize(text: str) -> Generator[str, None, None]:
     lexer = default_lexer()
     lexer.input(text)
@@ -122,7 +126,7 @@ class Block:
             self.body[-1].finish()
         else:
             if self.finished:
-                raise SyntaxError("the block was already closed")
+                raise YabiSyntaxError("the block was already closed")
             self.finished = True
 
     def reindent(self, indent: str):
@@ -387,7 +391,7 @@ class Parser:
             self.i += 1
 
         if any(indent is None for indent in self.indent_stack):
-            raise SyntaxError(UNCLOSED_BLOCK_ERROR)
+            raise YabiSyntaxError(UNCLOSED_BLOCK_ERROR)
         while not self.result.finished:
             self.result.finish()
 
@@ -460,7 +464,7 @@ class Parser:
                 self.i += 1
                 return True
             if terminator != "{":
-                raise SyntaxError("async lambda must use braces")
+                raise YabiSyntaxError("async lambda must use braces")
             lambda_body = self._fully_parse_long_lambda()
             brace_stack_copy = []
             for brace, is_block in reversed(self.brace_stack):
@@ -495,7 +499,7 @@ class Parser:
                 head.append(tok)
             self.i += 1
         if brace_stack:
-            raise SyntaxError(UNCLOSED_BLOCK_ERROR)
+            raise YabiSyntaxError(UNCLOSED_BLOCK_ERROR)
 
         name = _gen_lambda_name()
         if self.in_head:
@@ -547,10 +551,10 @@ class Parser:
         try:
             brace, block_finished = self.brace_stack.pop()
         except IndexError as e:
-            raise SyntaxError(f"unmatched '{tok}'") from e
+            raise YabiSyntaxError(f"unmatched '{tok}'") from e
         self.accept_keyword = block_finished
         if BRACES[brace] != tok:
-            raise SyntaxError(
+            raise YabiSyntaxError(
                 f"closing parenthesis '{tok}' does not match"
                 f" opening parenthesis '{brace}'"
             )
@@ -561,7 +565,7 @@ class Parser:
             self.result.finish()
             self.skip = True
             if self.indent_stack.pop() is not None:
-                raise SyntaxError("indented block was not properly closed")
+                raise YabiSyntaxError("indented block was not properly closed")
 
 
 def parse(tokens: Iterable[str]) -> Block:
