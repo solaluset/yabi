@@ -1,3 +1,1 @@
-from importlib import metadata
-
-__version__ = metadata.version("yabi-bython")
+__version__ = "0.9.3"
