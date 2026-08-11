@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "yabi-bython"
-version = "0.9.3"
+dynamic = ["version"]
 description = "Yet Another Bython (braced Python) Implementation"
 authors = [{name = "Sóla Łuset"}]
 readme = "README.md"
@@ -19,3 +19,6 @@ Repository = "https://github.com/solaluset/yabi"
 
 [tool.hatch.build.targets.wheel]
 packages = ["yabi"]
+
+[tool.hatch.version]
+path = "yabi/version.py"
