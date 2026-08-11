@@ -1,19 +1,50 @@
 import os
 import sys
+import ast
 from io import StringIO
 from unittest.mock import patch
 
-from pytest import mark
+from pytest import mark, fixture
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
 from yabi import config, main, to_bython, to_pure_python  # noqa: E402
 from yabi.console import YabiConsole  # noqa: E402
+from yabi.parser import _transform  # noqa: E402
 
 
 sys.dont_write_bytecode = True
 sys.ps1 = getattr(sys, "ps1", ">>> ")
 sys.ps2 = getattr(sys, "ps2", "... ")
+
+
+def _ok_err(func, *args):
+    try:
+        return func(*args), None
+    except Exception as e:
+        return None, e
+
+
+@fixture(scope="session", autouse=True)
+def checked_transform():
+    def _transform_test(code: str, python: bool) -> str:
+        ret = _transform(code, python)
+
+        result1 = _transform(ret, True)
+        result2 = ret if python else _transform(result1, True)
+
+        ast1, err1 = _ok_err(ast.parse, result1)
+        ast2, err2 = _ok_err(ast.parse, result2)
+        # check if ASTs or their errors are equivalent
+        if ast1:
+            assert ast2 and ast.dump(ast1) == ast.dump(ast2)
+        else:
+            assert type(err1) is type(err2) and err1.args == err2.args
+
+        return ret
+
+    with patch("yabi.parser._transform", new=_transform_test):
+        yield
 
 
 def check_file(file, expexted_output, *args):
