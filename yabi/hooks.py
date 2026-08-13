@@ -1,8 +1,8 @@
 from pwcp import PreprocessorHooks, PycType
 
 from . import config
-from .version import __version__
 from .parser import to_pure_python
+from .version import __version__
 
 
 class YabiHooks(PreprocessorHooks):

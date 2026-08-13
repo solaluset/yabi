@@ -1,5 +1,5 @@
-import sys
 import ast
+import sys
 from code import InteractiveConsole
 
 from pwcp.preprocessor import PreprocessorError, preprocess
@@ -48,11 +48,11 @@ class YabiConsole(InteractiveConsole):
 
     def runcode(self, code) -> bool:
         try:
-            exec(code, self.locals)
+            exec(code, self.locals)  # noqa: S102
             return True
         except SystemExit:
             raise
-        except BaseException:
+        except BaseException:  # noqa: BLE001
             self.showtraceback()
             return False
 

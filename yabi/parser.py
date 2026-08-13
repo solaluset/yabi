@@ -1,11 +1,11 @@
 from __future__ import annotations
+
 import ast
+from collections.abc import Generator, Iterable
 from io import StringIO
-from typing import Generator, Iterable
 from tokenize import NAME, OP, generate_tokens
 
 from pypp.parser import default_lexer
-
 
 KEYWORDS = {
     "async",
@@ -508,7 +508,7 @@ class Parser:
             self.result.append(name)
 
         strip_spaces(head)
-        if not head or not head[0] == "(" or not head[-1] == ")":
+        if not head or head[0] != "(" or head[-1] != ")":
             head.insert(0, "(")
             head.append(")")
         head = ["def", " ", name] + head

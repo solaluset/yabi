@@ -1,13 +1,12 @@
+import argparse
 import os
 import sys
-import argparse
 
 import pwcp
 
 from . import config
 from .hooks import YabiHooks
 from .version import __version__
-
 
 parser = argparse.ArgumentParser(
     (
