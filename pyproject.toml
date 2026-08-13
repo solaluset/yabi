@@ -10,7 +10,7 @@ authors = [{name = "Sóla Łuset"}]
 readme = "README.md"
 license = "MIT"
 license-files = ["LICENSE.md"]
-dependencies = ["pwcp>=0.12.2,<0.13"]
+dependencies = ["pwcp~=0.13.0"]
 optional-dependencies = {tests = ["pytest"]}
 scripts = {yabi = "yabi:main", yabi-convert = "yabi.convert:main"}
 
