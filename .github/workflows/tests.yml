@@ -9,7 +9,7 @@ jobs:
       runners: '[
         "ubuntu-24.04"
       ]'
-      min-version: "3.8"
+      min-version: "3.9"
       include-pre-releases: true
       implementations: '["CPython", "PyPy"]'
 
