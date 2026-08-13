@@ -1,8 +1,7 @@
-import sys
 import argparse
+import sys
 
-from .parser import to_pure_python, to_bython
-
+from .parser import to_bython, to_pure_python
 
 parser = argparse.ArgumentParser(
     description="Python <==> Bython converter",

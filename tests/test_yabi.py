@@ -1,17 +1,16 @@
+import ast
 import os
 import sys
-import ast
 from io import StringIO
 from unittest.mock import patch
 
-from pytest import mark, fixture
+from pytest import fixture, mark
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
-from yabi import config, main, to_bython, to_pure_python  # noqa: E402
-from yabi.console import YabiConsole  # noqa: E402
-from yabi.parser import _transform  # noqa: E402
-
+from yabi import config, main, to_bython, to_pure_python
+from yabi.console import YabiConsole
+from yabi.parser import _transform
 
 sys.dont_write_bytecode = True
 sys.ps1 = getattr(sys, "ps1", ">>> ")
@@ -21,7 +20,7 @@ sys.ps2 = getattr(sys, "ps2", "... ")
 def _ok_err(func, *args):
     try:
         return func(*args), None
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         return None, e
 
 
@@ -54,8 +53,9 @@ def check_file(file, expexted_output, *args):
 
 
 def check_console(code, expexted_output):
-    with patch("sys.stdout", new=StringIO()), patch(
-        "sys.stdin", new=StringIO(code)
+    with (
+        patch("sys.stdout", new=StringIO()),
+        patch("sys.stdin", new=StringIO(code)),
     ):
         YabiConsole().interact()
         assert sys.stdout.getvalue() == expexted_output
@@ -182,9 +182,7 @@ for i in {1, 2, 3}:
    !
    /* these comments too */
         print("No")
-    """.strip().replace(
-                "!", ""
-            )
+    """.strip().replace("!", "")
         )
         == """
 for (i in {1, 2, 3}) {
@@ -198,9 +196,7 @@ for (i in {1, 2, 3}) {
         print("No")
     }
 }
-    """.strip().replace(
-            "!", ""
-        )
+    """.strip().replace("!", "")
     )
 
 
